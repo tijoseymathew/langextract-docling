@@ -1,20 +1,12 @@
-# LangExtract docling Provider
+# LangExtract Docling
 
-A provider plugin for LangExtract that supports docling models.
+A [Docling](https://github.com/docling-project/docling) wrapper of [LangExtract](https://github.com/google/langextract) that supports based parsing of PDF documents.
 
 ## Installation
 
 ```bash
 pip install -e .
 ```
-
-## Supported Model IDs
-
-- `docling*`: Models matching pattern ^docling
-
-## Environment Variables
-
-- `DOCLING_API_KEY`: API key for authentication
 
 ## Usage
 
@@ -38,4 +30,4 @@ result = lx.extract(
 
 ## License
 
-Apache License 2.0
+MIT License

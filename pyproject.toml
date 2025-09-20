@@ -5,17 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "langextract-docling"
 version = "0.1.0"
-description = "LangExtract provider plugin for docling"
+description = "Docling based wrapper for LangExtract"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "Apache-2.0"}
+license = {text = "MIT"}
 dependencies = [
     "langextract>=1.0.0",
-    # Add your provider's SDK dependencies here
 ]
-
-[project.entry-points."langextract.providers"]
-docling = "langextract_docling.provider:doclingLanguageModel"
 
 [tool.setuptools.packages.find]
 where = ["."]

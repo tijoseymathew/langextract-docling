@@ -1,6 +1,14 @@
-"""LangExtract provider plugin for docling."""
+"""Wrapper for langextract library.
 
-from langextract_docling.provider import doclingLanguageModel
+This module wraps the langextract.extract method while passing through all other exports unchanged.
+"""
 
-__all__ = ['doclingLanguageModel']
-__version__ = "0.1.0"
+from langextract import *
+
+from langextract import extract as _original_extract
+
+
+def extract(*args, **kwargs):
+    """Wrapper around langextract.extract that adds a print statement."""
+    print("Extracting document...")
+    return _original_extract(*args, **kwargs)
