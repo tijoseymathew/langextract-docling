@@ -1,6 +1,6 @@
 # LangExtract Docling
 
-A [Docling](https://github.com/docling-project/docling) wrapper of [LangExtract](https://github.com/google/langextract) that supports based parsing of PDF documents.
+A wrapper for [LangExtract](https://github.com/google/langextract) that adds PDF processing capability using [Docling](https://github.com/docling-project/docling).
 
 ## Installation
 
@@ -11,22 +11,22 @@ pip install -e .
 ## Usage
 
 ```python
-import langextract as lx
+import langextract_docling as lx
 
+# Use with regular text
 result = lx.extract(
-    text="Your document here",
-    model_id="docling-model",
+    text_or_documents="Your document here",
+    prompt_description="Extract entities",
+    examples=[...]
+)
+
+# Use with PDF files
+result = lx.extract(
+    text_or_documents="path/to/document.pdf",
     prompt_description="Extract entities",
     examples=[...]
 )
 ```
-
-## Development
-
-1. Install in development mode: `pip install -e .`
-2. Run tests: `python test_plugin.py`
-3. Build package: `python -m build`
-4. Publish to PyPI: `twine upload dist/*`
 
 ## License
 
