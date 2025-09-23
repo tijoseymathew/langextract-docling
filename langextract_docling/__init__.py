@@ -11,6 +11,8 @@ import os
 import typing
 from langextract import prompt_validation as pv
 from langextract.core import data
+import requests
+import tempfile
 
 
 def extract(
@@ -49,7 +51,7 @@ def extract(
 
     Args:
         text_or_documents: The source text to extract information from, a path to
-          a PDF file, a URL to download text from (starting with http:// or https:// when fetch_urls
+          a PDF file, a URL to download text or PDF from (starting with http:// or https:// when fetch_urls
           is True), or an iterable of Document objects.
         prompt_description: Instructions for what to extract from the text.
         examples: List of ExampleData objects to guide the extraction.
@@ -138,23 +140,44 @@ def extract(
       requests.RequestException: If URL download fails.
       pv.PromptAlignmentError: If validation fails in ERROR mode.
     """
-    # Check if text_or_documents is a path to a PDF file using the new coding style
-    if (
-        isinstance(text_or_documents, str)
-        and _is_pdf_path(text_or_documents)
-    ):
-        # Import docling components here to avoid dependency issues
-        # when not processing PDF files
-        from docling.document_converter import DocumentConverter
-        from langextract_docling.markdown_chunker import HierarchicalMarkdownChunker
+    # Check if text_or_documents is a path to a PDF file or a URL to a PDF file
+    if isinstance(text_or_documents, str):
+        if _is_pdf_path(text_or_documents):
+            # Import docling components here to avoid dependency issues
+            # when not processing PDF files
+            from docling.document_converter import DocumentConverter
+            from langextract_docling.markdown_chunker import HierarchicalMarkdownChunker
 
-        filepath = Path(text_or_documents).expanduser()
-        converter = DocumentConverter()
-        document = converter.convert(filepath)
-        chunks = [x for x in HierarchicalMarkdownChunker().chunk(document.document)]
+            filepath = Path(text_or_documents).expanduser()
+            converter = DocumentConverter()
+            document = converter.convert(filepath)
+            chunks = [x for x in HierarchicalMarkdownChunker().chunk(document.document)]
 
-        # Concatenate all chunks into a single text
-        text_or_documents = "\n\n".join([chunk.text for chunk in chunks])
+            # Concatenate all chunks into a single text
+            text_or_documents = "\n\n".join([chunk.text for chunk in chunks])
+        elif fetch_urls and _is_pdf_url(text_or_documents):
+            # Handle PDF URL download
+            from docling.document_converter import DocumentConverter
+            from langextract_docling.markdown_chunker import HierarchicalMarkdownChunker
+
+            # Download PDF to a temporary file
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+                response = requests.get(text_or_documents, timeout=30)
+                response.raise_for_status()
+                tmp_file.write(response.content)
+                tmp_file_path = tmp_file.name
+
+            try:
+                # Process the downloaded PDF
+                converter = DocumentConverter()
+                document = converter.convert(tmp_file_path)
+                chunks = [x for x in HierarchicalMarkdownChunker().chunk(document.document)]
+
+                # Concatenate all chunks into a single text
+                text_or_documents = "\n\n".join([chunk.text for chunk in chunks])
+            finally:
+                # Clean up the temporary file
+                os.unlink(tmp_file_path)
 
     return _original_extract(
         text_or_documents=text_or_documents,
@@ -196,5 +219,46 @@ def _is_pdf_path(path):
     try:
         path_obj = Path(path).expanduser()
         return path_obj.is_file() and path_obj.suffix.lower() == '.pdf'
+    except Exception:
+        return False
+
+
+def _is_pdf_url(url):
+    """Check if the given URL points to a PDF file.
+
+    Args:
+        url: The URL to check.
+
+    Returns:
+        True if the URL points to a PDF file, False otherwise.
+    """
+    if not _is_text_url(url):
+        return False
+
+    try:
+        # Check if URL ends with .pdf
+        if url.lower().endswith('.pdf'):
+            return True
+
+        # Check Content-Type header
+        response = requests.head(url, timeout=10)
+        content_type = response.headers.get('Content-Type', '').lower()
+        return 'application/pdf' in content_type
+    except Exception:
+        return False
+
+
+def _is_text_url(text):
+    """Check if the given text is a valid URL using the langextract.io.is_url function.
+
+    Args:
+        text: The string to check.
+
+    Returns:
+        True if the text is a valid URL, False otherwise.
+    """
+    try:
+        from langextract import io
+        return io.is_url(text)
     except Exception:
         return False
