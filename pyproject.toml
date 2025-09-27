@@ -11,7 +11,7 @@ requires-python = ">=3.10"
 license = {text = "MIT"}
 dependencies = [
     "docling>=2.53.0",
-    "langextract>=1.0.0",
+    "langextract>=1.0.9",
 ]
 
 [tool.setuptools.packages.find]
