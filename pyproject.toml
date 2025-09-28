@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "langextract-docling"
-version = "0.1.0"
+version = "1.0.9-alpha"
 description = "Docling based wrapper for LangExtract"
 readme = "README.md"
 requires-python = ">=3.10"
