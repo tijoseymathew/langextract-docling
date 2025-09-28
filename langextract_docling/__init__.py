@@ -3,16 +3,43 @@
 This module wraps the langextract.extract method while passing through all other exports unchanged.
 """
 
-from langextract import *
-
-from langextract import extract as _original_extract
 from pathlib import Path
 import os
 import typing
+import importlib
+import sys
+from typing import Any, Dict
+from langextract import extract as _original_extract
 from langextract import prompt_validation as pv
 from langextract.core import data
 import requests
 import tempfile
+
+# Cache for lazy-loaded modules
+_CACHE: Dict[str, Any] = {}
+
+# Define the same lazy modules as the original langextract
+_LAZY_MODULES = {
+    "annotation": "langextract.annotation",
+    "chunking": "langextract.chunking",
+    "data": "langextract.data",
+    "data_lib": "langextract.data_lib",
+    "debug_utils": "langextract.core.debug_utils",
+    "exceptions": "langextract.exceptions",
+    "factory": "langextract.factory",
+    "inference": "langextract.inference",
+    "io": "langextract.io",
+    "progress": "langextract.progress",
+    "prompting": "langextract.prompting",
+    "providers": "langextract.providers",
+    "resolver": "langextract.resolver",
+    "schema": "langextract.schema",
+    "tokenizer": "langextract.tokenizer",
+    "visualization": "langextract.visualization",
+    "core": "langextract.core",
+    "plugins": "langextract.plugins",
+    "registry": "langextract.registry",  # Backward compat - will emit warning
+}
 
 
 def extract(
@@ -205,6 +232,28 @@ def extract(
         prompt_validation_level=prompt_validation_level,
         prompt_validation_strict=prompt_validation_strict,
     )
+
+
+# PEP 562 lazy loading - same as original langextract
+def __getattr__(name: str) -> Any:
+    if name in _CACHE:
+        return _CACHE[name]
+    modpath = _LAZY_MODULES.get(name)
+    if modpath is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    module = importlib.import_module(modpath)
+    # ensure future 'import langextract_docling.<name>' returns the same module
+    sys.modules[f"{__name__}.{name}"] = module
+    setattr(sys.modules[__name__], name, module)
+    _CACHE[name] = module
+    return module
+
+
+def __dir__():
+    # Return the same attributes as the original langextract, plus our wrapped extract
+    original_attrs = ["extract"]  # Include our wrapped extract function
+    lazy_attrs = list(_LAZY_MODULES.keys())
+    return sorted(original_attrs + lazy_attrs)
 
 
 def _is_pdf_path(path):

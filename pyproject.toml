@@ -14,6 +14,27 @@ dependencies = [
     "langextract>=1.0.9",
 ]
 
+[project.optional-dependencies]
+openai = ["openai>=1.50.0"]
+all = ["openai>=1.50.0"]
+test = [
+    "pytest>=7.4.0",
+    "tomli>=2.0.0"
+]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["langextract_docling*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "*_test.py"
+python_classes = "Test*"
+python_functions = "test_*"
+# Show extra test summary info
+addopts = "-ra"
+markers = [
+    "live_api: marks tests as requiring live API access",
+    "requires_pip: marks tests that perform pip install/uninstall operations",
+    "integration: marks integration tests that test multiple components together",
+]
