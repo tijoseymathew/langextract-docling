@@ -18,7 +18,6 @@ from unittest import mock
 import warnings
 
 from absl.testing import absltest
-
 import langextract as lx
 from langextract.core import data
 

@@ -23,7 +23,6 @@ import os
 from unittest import mock
 
 from absl.testing import absltest
-
 from langextract import exceptions
 from langextract import factory
 from langextract.core import base_model

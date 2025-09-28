@@ -24,7 +24,6 @@ from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
-
 from langextract import exceptions
 from langextract.core import base_model
 from langextract.core import data

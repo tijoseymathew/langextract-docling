@@ -16,7 +16,6 @@ import textwrap
 
 from absl.testing import absltest
 from absl.testing import parameterized
-
 from langextract import chunking
 from langextract.core import data
 from langextract.core import tokenizer

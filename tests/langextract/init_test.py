@@ -18,7 +18,6 @@ import textwrap
 from unittest import mock
 
 from absl.testing import absltest
-
 from langextract import prompting
 import langextract as lx
 from langextract.core import data

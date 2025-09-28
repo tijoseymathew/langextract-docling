@@ -30,11 +30,10 @@ from unittest import mock
 import uuid
 
 from absl.testing import absltest
-import pytest
-
 import langextract as lx
 from langextract.core import base_model
 from langextract.core import types
+import pytest
 
 
 def _create_mock_entry_points(entry_points_list):

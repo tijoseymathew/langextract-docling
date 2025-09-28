@@ -20,7 +20,6 @@ from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
-
 from langextract import annotation
 from langextract import prompting
 from langextract import resolver as resolver_lib

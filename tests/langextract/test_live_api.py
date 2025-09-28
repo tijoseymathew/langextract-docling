@@ -26,9 +26,8 @@ import time
 import unittest
 
 from dotenv import load_dotenv
-import pytest
-
 import langextract as lx
+import pytest
 
 load_dotenv()
 

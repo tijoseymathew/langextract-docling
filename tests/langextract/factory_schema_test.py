@@ -17,7 +17,6 @@
 from unittest import mock
 
 from absl.testing import absltest
-
 from langextract import factory
 from langextract import schema
 from langextract.core import base_model

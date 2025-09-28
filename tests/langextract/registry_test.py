@@ -23,7 +23,6 @@ Test helper classes also intentionally have few public methods.
 import re
 
 from absl.testing import absltest
-
 from langextract import exceptions
 from langextract.core import base_model
 from langextract.core import types

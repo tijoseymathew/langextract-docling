@@ -15,9 +15,8 @@
 """Integration tests for Ollama functionality."""
 import socket
 
-import pytest
-
 import langextract as lx
+import pytest
 
 
 def _ollama_available():
