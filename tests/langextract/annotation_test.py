@@ -14,17 +14,19 @@
 
 from collections.abc import Sequence
 import dataclasses
+import inspect
 import textwrap
 from typing import Type
 from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
+
 from langextract import annotation
 from langextract import prompting
 from langextract import resolver as resolver_lib
-from langextract import schema
 from langextract.core import data
+from langextract.core import exceptions
 from langextract.core import tokenizer
 from langextract.core import types
 from langextract.providers import gemini
@@ -85,7 +87,7 @@ class AnnotatorTest(absltest.TestCase):
             score=1.0,
             output=textwrap.dedent(f"""\
               ```yaml
-              {schema.EXTRACTIONS_KEY}:
+              {data.EXTRACTIONS_KEY}:
               - patient: "Jane Doe"
                 patient_index: 1
                 patient_id: "67890"
@@ -103,7 +105,10 @@ class AnnotatorTest(absltest.TestCase):
               ```"""),
         )
     ]]
-    resolver = resolver_lib.Resolver(format_type=data.FormatType.YAML)
+    resolver = resolver_lib.Resolver(
+        format_type=data.FormatType.YAML,
+        extraction_index_suffix=resolver_lib.DEFAULT_INDEX_SUFFIX,
+    )
     expected_annotated_text = data.AnnotatedDocument(
         text=text,
         extractions=[
@@ -208,7 +213,7 @@ class AnnotatorTest(absltest.TestCase):
             score=1.0,
             output=textwrap.dedent(f"""\
               ```yaml
-              {schema.EXTRACTIONS_KEY}:
+              {data.EXTRACTIONS_KEY}:
               - patient: "Jane Doe"
                 patient_id: "67890"
                 dosage: "10mg"
@@ -327,7 +332,7 @@ class AnnotatorTest(absltest.TestCase):
             score=1.0,
             output=textwrap.dedent(f"""\
               ```yaml
-              {schema.EXTRACTIONS_KEY}:
+              {data.EXTRACTIONS_KEY}:
               - patient: "Jane Doe"
                 patient_attributes:
                   status: "IDENTIFIABLE"
@@ -355,7 +360,7 @@ class AnnotatorTest(absltest.TestCase):
     resolver = resolver_lib.Resolver(
         format_type=data.FormatType.YAML,
         extraction_index_suffix=None,
-        extraction_attributes_suffix="_attributes",
+        extraction_attributes_suffix=data.ATTRIBUTE_SUFFIX,
     )
     expected_annotated_text = data.AnnotatedDocument(
         text=text,
@@ -468,7 +473,7 @@ class AnnotatorTest(absltest.TestCase):
                 score=1.0,
                 output=textwrap.dedent(f"""\
                   ```yaml
-                  {schema.EXTRACTIONS_KEY}:
+                  {data.EXTRACTIONS_KEY}:
                   - medication: "Aspirin"
                     medication_index: 4
                     reason: "headache"
@@ -481,7 +486,7 @@ class AnnotatorTest(absltest.TestCase):
                 score=1.0,
                 output=textwrap.dedent(f"""\
                   ```yaml
-                  {schema.EXTRACTIONS_KEY}:
+                  {data.EXTRACTIONS_KEY}:
                   - condition: "fever"
                     condition_index: 2
                   ```"""),
@@ -501,6 +506,7 @@ class AnnotatorTest(absltest.TestCase):
 
     resolver = resolver_lib.Resolver(
         format_type=data.FormatType.YAML,
+        extraction_index_suffix=resolver_lib.DEFAULT_INDEX_SUFFIX,
     )
     expected_annotated_text = data.AnnotatedDocument(
         text=text,
@@ -567,12 +573,13 @@ class AnnotatorTest(absltest.TestCase):
             score=1.0,
             output=textwrap.dedent(f"""\
             ```yaml
-            {schema.EXTRACTIONS_KEY}: []
+            {data.EXTRACTIONS_KEY}: []
             ```"""),
         )
     ]]
     resolver = resolver_lib.Resolver(
         format_type=data.FormatType.YAML,
+        extraction_index_suffix=resolver_lib.DEFAULT_INDEX_SUFFIX,
     )
     expected_annotated_text = data.AnnotatedDocument(text=text, extractions=[])
 
@@ -591,7 +598,7 @@ class AnnotatorMultipleDocumentTest(parameterized.TestCase):
 
   _LLM_INFERENCE = textwrap.dedent(f"""\
     ```yaml
-    {schema.EXTRACTIONS_KEY}:
+    {data.EXTRACTIONS_KEY}:
     - PATIENT: "Patient"
       PATIENT_index: 0
     - SYMPTOM: "migraine"
@@ -719,7 +726,9 @@ class AnnotatorMultipleDocumentTest(parameterized.TestCase):
         annotator.annotate_documents(
             document_objects,
             resolver=resolver_lib.Resolver(
-                fence_output=True, format_type=data.FormatType.YAML
+                fence_output=True,
+                format_type=data.FormatType.YAML,
+                extraction_index_suffix=resolver_lib.DEFAULT_INDEX_SUFFIX,
             ),
             max_char_buffer=200,
             batch_length=batch_length,
@@ -742,7 +751,7 @@ class AnnotatorMultipleDocumentTest(parameterized.TestCase):
               {"text": _FIXED_DOCUMENT_CONTENT, "document_id": "doc1"},
               {"text": _FIXED_DOCUMENT_CONTENT, "document_id": "doc1"},
           ],
-          expected_exception=annotation.DocumentRepeatError,
+          expected_exception=exceptions.InvalidDocumentError,
       ),
       dict(
           testcase_name="same_document_id_separated",
@@ -751,13 +760,13 @@ class AnnotatorMultipleDocumentTest(parameterized.TestCase):
               {"text": _FIXED_DOCUMENT_CONTENT, "document_id": "doc2"},
               {"text": _FIXED_DOCUMENT_CONTENT, "document_id": "doc1"},
           ],
-          expected_exception=annotation.DocumentRepeatError,
+          expected_exception=exceptions.InvalidDocumentError,
       ),
   )
   def test_annotate_documents_exceptions(
       self,
       documents: Sequence[dict[str, str]],
-      expected_exception: Type[annotation.DocumentRepeatError],
+      expected_exception: Type[exceptions.InvalidDocumentError],
       batch_length: int = 1,
   ):
     mock_language_model = self.enter_context(
@@ -815,7 +824,7 @@ class AnnotatorMultiPassTest(absltest.TestCase):
                 score=1.0,
                 output=textwrap.dedent(f"""\
               ```yaml
-              {schema.EXTRACTIONS_KEY}:
+              {data.EXTRACTIONS_KEY}:
               - patient: "John Smith"
                 patient_index: 1
               - condition: "diabetes"
@@ -828,7 +837,7 @@ class AnnotatorMultiPassTest(absltest.TestCase):
                 score=1.0,
                 output=textwrap.dedent(f"""\
               ```yaml
-              {schema.EXTRACTIONS_KEY}:
+              {data.EXTRACTIONS_KEY}:
               - medication: "insulin"
                 medication_index: 7
               - frequency: "daily"
@@ -838,7 +847,10 @@ class AnnotatorMultiPassTest(absltest.TestCase):
         ]],
     ]
 
-    resolver = resolver_lib.Resolver(format_type=data.FormatType.YAML)
+    resolver = resolver_lib.Resolver(
+        format_type=data.FormatType.YAML,
+        extraction_index_suffix=resolver_lib.DEFAULT_INDEX_SUFFIX,
+    )
 
     result = self.annotator.annotate_text(
         text, resolver=resolver, extraction_passes=2, debug=False
@@ -863,7 +875,7 @@ class AnnotatorMultiPassTest(absltest.TestCase):
                 score=1.0,
                 output=textwrap.dedent(f"""\
               ```yaml
-              {schema.EXTRACTIONS_KEY}:
+              {data.EXTRACTIONS_KEY}:
               - doctor: "Dr. Smith"
                 doctor_index: 0
               ```"""),
@@ -874,7 +886,7 @@ class AnnotatorMultiPassTest(absltest.TestCase):
                 score=1.0,
                 output=textwrap.dedent(f"""\
               ```yaml
-              {schema.EXTRACTIONS_KEY}:
+              {data.EXTRACTIONS_KEY}:
               - patient: "Smith"
                 patient_index: 1
               - medication: "aspirin"
@@ -884,7 +896,10 @@ class AnnotatorMultiPassTest(absltest.TestCase):
         ]],
     ]
 
-    resolver = resolver_lib.Resolver(format_type=data.FormatType.YAML)
+    resolver = resolver_lib.Resolver(
+        format_type=data.FormatType.YAML,
+        extraction_index_suffix=resolver_lib.DEFAULT_INDEX_SUFFIX,
+    )
 
     result = self.annotator.annotate_text(
         text, resolver=resolver, extraction_passes=2, debug=False
@@ -909,7 +924,7 @@ class AnnotatorMultiPassTest(absltest.TestCase):
             score=1.0,
             output=textwrap.dedent(f"""\
               ```yaml
-              {schema.EXTRACTIONS_KEY}:
+              {data.EXTRACTIONS_KEY}:
               - patient: "Patient"
                 patient_index: 0
               - condition: "fever"
@@ -918,7 +933,10 @@ class AnnotatorMultiPassTest(absltest.TestCase):
         )
     ]]
 
-    resolver = resolver_lib.Resolver(format_type=data.FormatType.YAML)
+    resolver = resolver_lib.Resolver(
+        format_type=data.FormatType.YAML,
+        extraction_index_suffix=resolver_lib.DEFAULT_INDEX_SUFFIX,
+    )
 
     result = self.annotator.annotate_text(
         text, resolver=resolver, extraction_passes=1, debug=False  # Single pass
@@ -937,7 +955,7 @@ class AnnotatorMultiPassTest(absltest.TestCase):
                 score=1.0,
                 output=textwrap.dedent(f"""\
               ```yaml
-              {schema.EXTRACTIONS_KEY}:
+              {data.EXTRACTIONS_KEY}:
               - test: "Test"
                 test_index: 0
               ```"""),
@@ -948,13 +966,16 @@ class AnnotatorMultiPassTest(absltest.TestCase):
                 score=1.0,
                 output=textwrap.dedent(f"""\
               ```yaml
-              {schema.EXTRACTIONS_KEY}: []
+              {data.EXTRACTIONS_KEY}: []
               ```"""),
             )
         ]],
     ]
 
-    resolver = resolver_lib.Resolver(format_type=data.FormatType.YAML)
+    resolver = resolver_lib.Resolver(
+        format_type=data.FormatType.YAML,
+        extraction_index_suffix=resolver_lib.DEFAULT_INDEX_SUFFIX,
+    )
 
     result = self.annotator.annotate_text(
         text, resolver=resolver, extraction_passes=2, debug=False
@@ -1097,6 +1118,90 @@ class MultiPassHelperFunctionsTest(parameterized.TestCase):
     """Test overlap detection between extractions."""
     result = annotation._extractions_overlap(ext1, ext2)
     self.assertEqual(result, expected)
+
+
+class AnnotateDocumentsGeneratorTest(absltest.TestCase):
+  """Tests that annotate_documents uses 'yield from' for proper delegation."""
+
+  def setUp(self):
+    super().setUp()
+    self.mock_language_model = self.enter_context(
+        mock.patch.object(gemini, "GeminiLanguageModel", autospec=True)
+    )
+
+    def mock_infer(batch_prompts, **_):
+      """Return medication extractions based on prompt content."""
+      for prompt in batch_prompts:
+        if "Ibuprofen" in prompt:
+          text = textwrap.dedent(f"""\
+            ```yaml
+            {data.EXTRACTIONS_KEY}:
+            - medication: "Ibuprofen"
+              medication_index: 4
+            ```""")
+        elif "Cefazolin" in prompt:
+          text = textwrap.dedent(f"""\
+            ```yaml
+            {data.EXTRACTIONS_KEY}:
+            - medication: "Cefazolin"
+              medication_index: 4
+            ```""")
+        else:
+          text = f"```yaml\n{data.EXTRACTIONS_KEY}: []\n```"
+        yield [types.ScoredOutput(score=1.0, output=text)]
+
+    self.mock_language_model.infer.side_effect = mock_infer
+
+    self.annotator = annotation.Annotator(
+        language_model=self.mock_language_model,
+        prompt_template=prompting.PromptTemplateStructured(description=""),
+    )
+
+  def test_yields_documents_not_generators(self):
+    """Verifies annotate_documents yields AnnotatedDocument, not generators."""
+    docs = [
+        data.Document(
+            text="Patient took 400 mg PO Ibuprofen q4h for two days.",
+            document_id="doc1",
+        ),
+        data.Document(
+            text="Patient was given 250 mg IV Cefazolin TID for one week.",
+            document_id="doc2",
+        ),
+    ]
+
+    results = list(
+        self.annotator.annotate_documents(
+            docs,
+            resolver=resolver_lib.Resolver(
+                fence_output=True,
+                format_type=data.FormatType.YAML,
+                extraction_index_suffix=resolver_lib.DEFAULT_INDEX_SUFFIX,
+            ),
+            show_progress=False,
+            debug=False,
+        )
+    )
+
+    self.assertLen(results, 2)
+    self.assertFalse(
+        any(inspect.isgenerator(item) for item in results),
+        msg="Must use 'yield from' to delegate, not 'yield'",
+    )
+    meds_doc1 = {
+        e.extraction_text
+        for e in results[0].extractions
+        if e.extraction_class == "medication"
+    }
+    meds_doc2 = {
+        e.extraction_text
+        for e in results[1].extractions
+        if e.extraction_class == "medication"
+    }
+    self.assertIn("Ibuprofen", meds_doc1)
+    self.assertNotIn("Cefazolin", meds_doc1)
+    self.assertIn("Cefazolin", meds_doc2)
+    self.assertNotIn("Ibuprofen", meds_doc2)
 
 
 if __name__ == "__main__":

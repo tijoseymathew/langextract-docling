@@ -17,8 +17,9 @@
 import unittest
 from unittest import mock
 
-from langextract import progress
 import tqdm
+
+from langextract import progress
 
 
 class ProgressTest(unittest.TestCase):

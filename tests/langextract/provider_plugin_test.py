@@ -30,10 +30,11 @@ from unittest import mock
 import uuid
 
 from absl.testing import absltest
+import pytest
+
 import langextract as lx
 from langextract.core import base_model
 from langextract.core import types
-import pytest
 
 
 def _create_mock_entry_points(entry_points_list):
@@ -217,7 +218,7 @@ class PluginSmokeTest(absltest.TestCase):
     """Plugin with higher priority should override core provider on conflicts."""
 
     lx.providers.registry.clear()
-    lx.providers._PLUGINS_LOADED = False
+    lx.providers._plugins_loaded = False
 
     def _ep_load():
       @lx.providers.registry.register(r"^gemini", priority=50)
@@ -249,7 +250,7 @@ class PluginSmokeTest(absltest.TestCase):
     """resolve_provider should find plugin by class name and name-insensitive."""
 
     lx.providers.registry.clear()
-    lx.providers._PLUGINS_LOADED = False
+    lx.providers._plugins_loaded = False
 
     def _ep_load():
       @lx.providers.registry.register(r"^plugin-resolve")
@@ -295,7 +296,7 @@ class PluginSmokeTest(absltest.TestCase):
         return {"custom_schema": self._config}
 
       @property
-      def supports_strict_mode(self):
+      def requires_raw_output(self):
         return True
 
     def _ep_load():
@@ -370,7 +371,7 @@ class PluginSmokeTest(absltest.TestCase):
     )
     self.assertFalse(
         model.requires_fence_output,
-        "Schema supports strict mode, no fences needed",
+        "Schema outputs raw JSON, no fences needed",
     )
 
 
@@ -398,7 +399,7 @@ class PluginE2ETest(absltest.TestCase):
         return {"custom_schema": self._config}
 
       @property
-      def supports_strict_mode(self):
+      def requires_raw_output(self):
         return True
 
     def _ep_load():
@@ -436,9 +437,9 @@ class PluginE2ETest(absltest.TestCase):
 
     # Clear and set up registry
     lx.providers.registry.clear()
-    lx.providers._PLUGINS_LOADED = False
+    lx.providers._plugins_loaded = False
     self.addCleanup(lx.providers.registry.clear)
-    self.addCleanup(setattr, lx.providers, "_PLUGINS_LOADED", False)
+    self.addCleanup(setattr, lx.providers, "_plugins_loaded", False)
 
     with mock.patch.object(
         metadata, "entry_points", return_value=_create_mock_entry_points([ep])
@@ -536,7 +537,7 @@ class PluginE2ETest(absltest.TestCase):
                 return {"schema_config": self._config}
 
             @property
-            def supports_strict_mode(self):
+            def requires_raw_output(self):
                 return True
 
         @lx.providers.registry.register(r'^test-pip-model', priority=50)
@@ -636,7 +637,7 @@ class PluginE2ETest(absltest.TestCase):
           )
           result2 = model2.infer(["test prompt"])
           assert "with_schema" in result2[0][0].output, f"Got: {{result2[0][0].output}}"
-          assert model2.requires_fence_output == False, "Schema supports strict mode, should not need fences"
+          assert model2.requires_fence_output == False, "Schema outputs raw JSON, should not need fences"
 
           # Test 3: Verify schema class is available
           provider_cls = lx.providers.registry.resolve("test-pip-model-xyz")
@@ -672,7 +673,7 @@ class PluginE2ETest(absltest.TestCase):
         )
 
         lx.providers.registry.clear()
-        lx.providers._PLUGINS_LOADED = False
+        lx.providers._plugins_loaded = False
         lx.providers.load_plugins_once()
 
         with self.assertRaisesRegex(
