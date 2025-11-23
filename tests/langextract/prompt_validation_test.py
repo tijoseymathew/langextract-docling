@@ -16,6 +16,7 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
+
 from langextract import extraction
 from langextract import prompt_validation
 from langextract.core import data
