@@ -36,6 +36,53 @@ result = lx.extract(
 )
 ```
 
+## PDF provenance
+
+Extractions from PDF inputs can be traced back to the page and bounding box
+they came from. Each aligned extraction carries a `provenance` attribute — a
+list of `SpanProvenance` objects linking the extraction's character range to
+the docling document items it overlaps — and the returned document carries a
+`provenance_map` covering the full text:
+
+```python
+import langextract_docling as lx
+
+result = lx.extract(
+    text_or_documents="paper.pdf",
+    prompt_description="Extract author names",
+    examples=[...],
+)
+
+for e in result.extractions:
+    for span in (e.provenance or []):
+        for loc in span.locations:
+            print(f"{e.extraction_text!r}: page {loc.page_no}, bbox {loc.bbox}")
+```
+
+Notes:
+
+- Provenance granularity is the docling document item (paragraph, heading,
+  table, list group). `span.doc_item_ref` (e.g. `#/texts/12`) points back
+  into the docling document; `span.locations` holds page number, bounding
+  box, and coordinate origin (empty for non-paginated sources).
+- Extractions that langextract could not align (`char_interval is None`)
+  have `provenance = None`.
+- Non-PDF inputs (plain text, text URLs, Document iterables) bypass docling
+  and get no `provenance` attribute — read it with
+  `getattr(extraction, "provenance", None)`.
+- Pass `include_provenance=False` to convert PDFs to the identical markdown
+  without enrichment.
+- `provenance` and `provenance_map` are dynamic attributes, invisible to
+  langextract's JSONL serialization. To persist them, save a sidecar:
+
+```python
+import json
+from langextract_docling.provenance import provenance_to_dict
+
+with open("results.provenance.json", "w") as f:
+    json.dump(provenance_to_dict(result), f)
+```
+
 ## Breaking changes in 1.1.0
 
 Following the upgrade to LangExtract 1.6.0, the wrapper mirrors upstream's

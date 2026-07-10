@@ -7,7 +7,7 @@ import langextract_docling
 
 # Parameters the wrapper adds on top of the upstream signature. Extras must be
 # keyword-only so they can never collide positionally with upstream parameters.
-WRAPPER_ONLY_PARAMS = frozenset()
+WRAPPER_ONLY_PARAMS = frozenset({"include_provenance"})
 
 
 def _upstream_extract():
@@ -54,9 +54,9 @@ def test_wrapper_extra_parameters_are_known_and_keyword_only():
   wrapper = inspect.signature(langextract_docling.extract).parameters
 
   extras = set(wrapper) - set(upstream)
-  assert extras <= WRAPPER_ONLY_PARAMS, (
-      "unexpected wrapper-only parameters:"
-      f" {sorted(extras - WRAPPER_ONLY_PARAMS)}"
+  assert extras == WRAPPER_ONLY_PARAMS, (
+      "wrapper-only parameters diverge from the expected set"
+      f" {sorted(WRAPPER_ONLY_PARAMS)}: got {sorted(extras)}"
   )
   not_kw_only = [
       name

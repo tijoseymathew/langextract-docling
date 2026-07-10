@@ -69,9 +69,7 @@ def build_pdf(path: Path):
                   Paragraph("The engine computes Bernoulli numbers.", body)
               ),
               ListItem(
-                  Paragraph(
-                      "Punched cards store both programs and data.", body
-                  )
+                  Paragraph("Punched cards store both programs and data.", body)
               ),
               ListItem(Paragraph("Conditional branching is supported.", body)),
           ],
@@ -109,7 +107,9 @@ def main():
   from langextract_docling.markdown_chunker import HierarchicalMarkdownChunker
 
   with tempfile.TemporaryDirectory() as tmp:
-    pdf_path = Path(tmp) / "report.pdf"
+    # The PDF itself is checked in too; extract() pipeline tests feed it
+    # through the real docling conversion.
+    pdf_path = DATA_DIR / "report.pdf"
     build_pdf(pdf_path)
     md_path = Path(tmp) / "notes.md"
     md_path.write_text(MARKDOWN_SOURCE)

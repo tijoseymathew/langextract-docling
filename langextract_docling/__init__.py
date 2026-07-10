@@ -69,6 +69,7 @@ def extract(
     config: typing.Any = None,
     model: typing.Any = None,
     *,
+    include_provenance: bool = True,
     output_schema: core_types.JsonSchema | None = None,
     fetch_urls: bool = False,
     prompt_validation_level: pv.PromptValidationLevel = pv.PromptValidationLevel.WARNING,
@@ -160,6 +161,14 @@ def extract(
         include as context for the current chunk. This helps with coreference
         resolution across chunk boundaries (e.g., resolving "She" to a person
         mentioned in the previous chunk). Defaults to None (disabled).
+      include_provenance: Whether PDF inputs are enriched with provenance:
+        each aligned extraction gains a `provenance` attribute (list of
+        provenance.SpanProvenance with page numbers and bounding boxes) and
+        the returned document gains a `provenance_map`. When False, PDFs are
+        converted to the identical markdown text without enrichment. No-op
+        for non-PDF inputs, whose extractions never get a `provenance`
+        attribute (use getattr(e, "provenance", None)). Keyword-only,
+        specific to langextract_docling.
       output_schema: Optional JSON schema for LangExtract's raw JSON output
         envelope. It replaces example-derived provider constraints, while
         examples still guide the prompt when supplied. Use `lx.schema` helpers
@@ -192,29 +201,14 @@ def extract(
     pv.PromptAlignmentError: If validation fails in ERROR mode.
   """
   # Check if text_or_documents is a path to a PDF file or a URL to a PDF file
+  provenance_map = None
   if isinstance(text_or_documents, str):
     if _is_pdf_path(text_or_documents):
-      # Import docling components here to avoid dependency issues
-      # when not processing PDF files
-      from docling.document_converter import DocumentConverter
-
-      from langextract_docling.markdown_chunker import HierarchicalMarkdownChunker
-
       filepath = Path(text_or_documents).expanduser()
-      converter = DocumentConverter()
-      document = converter.convert(filepath)
-      chunks = [
-          x for x in HierarchicalMarkdownChunker().chunk(document.document)
-      ]
-
-      # Concatenate all chunks into a single text
-      text_or_documents = "\n\n".join([chunk.text for chunk in chunks])
+      text_or_documents, provenance_map = _serialize_pdf(
+          filepath, source=str(filepath), include_provenance=include_provenance
+      )
     elif fetch_urls and _is_pdf_url(text_or_documents):
-      # Handle PDF URL download
-      from docling.document_converter import DocumentConverter
-
-      from langextract_docling.markdown_chunker import HierarchicalMarkdownChunker
-
       # Download PDF to a temporary file
       with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
         response = requests.get(text_or_documents, timeout=30)
@@ -223,20 +217,16 @@ def extract(
         tmp_file_path = tmp_file.name
 
       try:
-        # Process the downloaded PDF
-        converter = DocumentConverter()
-        document = converter.convert(tmp_file_path)
-        chunks = [
-            x for x in HierarchicalMarkdownChunker().chunk(document.document)
-        ]
-
-        # Concatenate all chunks into a single text
-        text_or_documents = "\n\n".join([chunk.text for chunk in chunks])
+        text_or_documents, provenance_map = _serialize_pdf(
+            tmp_file_path,
+            source=text_or_documents,
+            include_provenance=include_provenance,
+        )
       finally:
         # Clean up the temporary file
         os.unlink(tmp_file_path)
 
-  return _original_extract(
+  result = _original_extract(
       text_or_documents=text_or_documents,
       prompt_description=prompt_description,
       examples=examples,
@@ -266,6 +256,65 @@ def extract(
       show_progress=show_progress,
       tokenizer=tokenizer,
   )
+  if provenance_map is not None:
+    result = _attach_provenance(result, provenance_map)
+  return result
+
+
+def _serialize_pdf(filepath, source, include_provenance):
+  """Converts a PDF with docling and serializes it to markdown.
+
+  Args:
+      filepath: Path to the PDF file to convert.
+      source: Origin recorded on the provenance map (original path or URL).
+      include_provenance: Whether to build a ProvenanceMap alongside the
+        text.
+
+  Returns:
+      A (markdown_text, provenance_map) tuple; provenance_map is None when
+      include_provenance is False. The text is identical either way.
+  """
+  # Import docling components here to avoid dependency issues
+  # when not processing PDF files
+  from docling.document_converter import DocumentConverter
+
+  from langextract_docling.provenance_serializer import ProvenanceMarkdownSerializer
+
+  document = DocumentConverter().convert(filepath).document
+  serializer = ProvenanceMarkdownSerializer(doc=document)
+  text, provenance_map = serializer.serialize_with_provenance()
+  if not include_provenance:
+    return text, None
+  provenance_map.source = source
+  return text, provenance_map
+
+
+def _attach_provenance(annotated_doc, provenance_map):
+  """Enriches an AnnotatedDocument with provenance from the serializer.
+
+  Each aligned extraction gains a `provenance` attribute holding the
+  SpanProvenance list overlapping its char_interval (None when alignment
+  failed); the document gains `provenance_map`. These are dynamic
+  attributes: langextract's own JSONL serializer ignores them — use
+  provenance.provenance_to_dict() to persist them as a sidecar.
+
+  Args:
+      annotated_doc: The AnnotatedDocument returned by langextract.
+      provenance_map: The ProvenanceMap for the text langextract received.
+
+  Returns:
+      The same document, enriched in place.
+  """
+  for extraction in annotated_doc.extractions or []:
+    if extraction.char_interval is not None:
+      extraction.provenance = provenance_map.lookup(
+          extraction.char_interval.start_pos,
+          extraction.char_interval.end_pos,
+      )
+    else:
+      extraction.provenance = None  # alignment failed; no anchor to map
+  annotated_doc.provenance_map = provenance_map
+  return annotated_doc
 
 
 # PEP 562 lazy loading - same as original langextract
