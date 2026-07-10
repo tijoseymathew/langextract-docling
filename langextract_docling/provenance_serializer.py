@@ -31,6 +31,33 @@ class ProvenanceMarkdownSerializer(MarkdownDocSerializer):
   "\\n\\n" — i.e., identical to the HierarchicalMarkdownChunker output.
   """
 
+  def iter_item_results(
+      self, **kwargs: typing.Any
+  ) -> typing.Iterator[typing.Any]:
+    """Yields one non-empty SerializationResult per top-level item.
+
+    This is the single document walk shared by serialize_with_provenance
+    and HierarchicalMarkdownChunker: items are serialized in document
+    order, skipping excluded refs, already-visited items, and results
+    without text or source items.
+
+    Args:
+        **kwargs: Forwarded to get_excluded_refs (e.g. serializer filters).
+    """
+    excluded_refs = self.get_excluded_refs(**kwargs)
+    visited: set[str] = set()
+    for item, _ in self.doc.iterate_items(with_groups=True):
+      if item.self_ref in excluded_refs:
+        continue
+      if not isinstance(item, (ListGroup, InlineGroup, DocItem)):
+        continue
+      if item.self_ref in visited:
+        continue
+      ser_res = self.serialize(item=item, visited=visited)
+      if not ser_res.text or not ser_res.spans:
+        continue
+      yield ser_res
+
   def serialize_with_provenance(
       self, **kwargs: typing.Any
   ) -> tuple[str, ProvenanceMap]:
@@ -45,22 +72,10 @@ class ProvenanceMarkdownSerializer(MarkdownDocSerializer):
         physical page locations; the "\\n\\n" delimiters between items
         belong to no span.
     """
-    excluded_refs = self.get_excluded_refs(**kwargs)
-    visited: set[str] = set()
     parts: list[str] = []
     spans: list[SpanProvenance] = []
     offset = 0
-    for item, _ in self.doc.iterate_items(with_groups=True):
-      if item.self_ref in excluded_refs:
-        continue
-      if not isinstance(item, (ListGroup, InlineGroup, DocItem)):
-        continue
-      if item.self_ref in visited:
-        continue
-      ser_res = self.serialize(item=item, visited=visited)
-      # Match the chunker: emit only results carrying text and source items
-      if not ser_res.text or not ser_res.spans:
-        continue
+    for ser_res in self.iter_item_results(**kwargs):
       start = offset + (len(_DELIM) if parts else 0)
       end = start + len(ser_res.text)
       parts.append(ser_res.text)
