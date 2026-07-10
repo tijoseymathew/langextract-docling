@@ -10,8 +10,9 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 dependencies = [
-    "docling>=2.53.0",
-    "langextract==1.1.0",
+    "docling>=2.111.0",
+    "docling-core[chunking]>=2.86.0,<3.0.0",
+    "langextract==1.6.0",
 ]
 
 [project.optional-dependencies]
@@ -37,7 +38,7 @@ include = ["langextract_docling*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = "*_test.py"
+python_files = ["test_*.py", "*_test.py"]
 python_classes = "Test*"
 python_functions = "test_*"
 # Show extra test summary info

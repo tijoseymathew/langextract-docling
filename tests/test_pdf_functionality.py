@@ -65,14 +65,15 @@ class TestPDFFunctionality(absltest.TestCase):
 
   def test_pdf_url_processing(self):
     """Test that PDF URLs are downloaded, converted to text, and sent to langextract."""
-    # Mock the _is_pdf_url function to return True for our test URL
-    # This will ensure the URL is processed as a PDF
+    # fetch_urls defaults to False since langextract 1.6.0, so URL handling
+    # must be opted into explicitly
     with mock.patch("langextract_docling._original_extract") as mock_extract:
       # Call the extract function with PDF URL
       result = lx.extract(
           text_or_documents=PDF_URL,
           prompt_description="Test description",
           examples=[],
+          fetch_urls=True,
       )
 
       # The original extract should be called with the text extracted from the PDF

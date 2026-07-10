@@ -13,7 +13,9 @@ from typing import Any, Dict
 
 from langextract import extract as _original_extract
 from langextract import prompt_validation as pv
+from langextract import tokenizer as tokenizer_lib
 from langextract.core import data
+from langextract.core import types as core_types
 import requests
 
 # Cache for lazy-loaded modules
@@ -47,7 +49,7 @@ def extract(
     text_or_documents: typing.Any,
     prompt_description: str | None = None,
     examples: typing.Sequence[typing.Any] | None = None,
-    model_id: str = "gemini-2.5-flash",
+    model_id: str = "gemini-3.5-flash",
     api_key: str | None = None,
     language_model_type: typing.Type[typing.Any] | None = None,
     format_type: typing.Any = None,
@@ -63,13 +65,16 @@ def extract(
     debug: bool = False,
     model_url: str | None = None,
     extraction_passes: int = 1,
+    context_window_chars: int | None = None,
     config: typing.Any = None,
     model: typing.Any = None,
     *,
-    fetch_urls: bool = True,
+    output_schema: core_types.JsonSchema | None = None,
+    fetch_urls: bool = False,
     prompt_validation_level: pv.PromptValidationLevel = pv.PromptValidationLevel.WARNING,
     prompt_validation_strict: bool = False,
     show_progress: bool = True,
+    tokenizer: tokenizer_lib.Tokenizer | None = None,
 ) -> typing.Any:
   """Extracts structured information from text.
 
@@ -84,6 +89,9 @@ def extract(
         is True), or an iterable of Document objects.
       prompt_description: Instructions for what to extract from the text.
       examples: List of ExampleData objects to guide the extraction.
+        Required unless `output_schema` is provided.
+      tokenizer: Optional Tokenizer instance to use for chunking and alignment.
+        If None, defaults to RegexTokenizer.
       api_key: API key for Gemini or other LLM services (can also use
         environment variable LANGEXTRACT_API_KEY). Cost considerations: Most
         APIs charge by token volume. Smaller max_char_buffer values increase the
@@ -91,7 +99,7 @@ def extract(
         multiple times. Note that max_workers improves processing speed without
         additional token costs. Refer to your API provider's pricing details and
         monitor usage with small test runs to estimate costs.
-      model_id: The model ID to use for extraction (e.g., 'gemini-2.5-flash').
+      model_id: The model ID to use for extraction (e.g., 'gemini-3.5-flash').
         If your model ID is not recognized or you need to use a custom provider,
         use the 'config' parameter with factory.ModelConfig to specify the
         provider explicitly.
@@ -148,10 +156,21 @@ def extract(
         and config are provided, model takes precedence.
       model: Pre-configured language model to use for extraction. Takes
         precedence over all other parameters including config.
+      context_window_chars: Number of characters from the previous chunk to
+        include as context for the current chunk. This helps with coreference
+        resolution across chunk boundaries (e.g., resolving "She" to a person
+        mentioned in the previous chunk). Defaults to None (disabled).
+      output_schema: Optional JSON schema for LangExtract's raw JSON output
+        envelope. It replaces example-derived provider constraints, while
+        examples still guide the prompt when supplied. Use `lx.schema` helpers
+        for common schemas. Supported by Gemini and OpenAI; YAML and forced
+        fences are invalid with output_schema.
       fetch_urls: Whether to automatically download content when the input is a
-        URL string. When True (default), strings starting with http:// or
-        https:// are fetched. When False, all strings are treated as literal
-        text to analyze. This is a keyword-only parameter.
+        URL string (including PDF URLs). If True, http(s) strings are fetched
+        via `requests.get` with no sanitization (SSRF risk: internal metadata,
+        loopback, redirects, DNS rebinding, etc.). Default False; all strings
+        except local PDF paths are literal text. Only enable when URLs come
+        from a trusted source AND the process runs in a sandbox. Keyword-only.
       prompt_validation_level: Controls pre-flight alignment checks on few-shot
         examples. OFF skips validation, WARNING logs issues but continues, ERROR
         raises on failures. Defaults to WARNING.
@@ -166,9 +185,10 @@ def extract(
         iterable of Documents.
 
   Raises:
-    ValueError: If examples is None or empty.
+    ValueError: If examples is None or empty and neither output_schema nor a
+      preconfigured output-schema model is provided.
     ValueError: If no API key is provided or found in environment variables.
-    requests.RequestException: If URL download fails.
+    requests.RequestException: If `fetch_urls=True` and the URL download fails.
     pv.PromptAlignmentError: If validation fails in ERROR mode.
   """
   # Check if text_or_documents is a path to a PDF file or a URL to a PDF file
@@ -236,12 +256,15 @@ def extract(
       debug=debug,
       model_url=model_url,
       extraction_passes=extraction_passes,
+      context_window_chars=context_window_chars,
       config=config,
       model=model,
+      output_schema=output_schema,
       fetch_urls=fetch_urls,
       prompt_validation_level=prompt_validation_level,
       prompt_validation_strict=prompt_validation_strict,
       show_progress=show_progress,
+      tokenizer=tokenizer,
   )
 
 

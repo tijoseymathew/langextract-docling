@@ -27,13 +27,24 @@ result = lx.extract(
     examples=[...]
 )
 
-# Extract from a PDF URL
+# Extract from a PDF URL (requires fetch_urls=True; see below)
 result = lx.extract(
     text_or_documents="https://example.com/document.pdf",
     prompt_description="Extract entities",
-    examples=[...]
+    examples=[...],
+    fetch_urls=True,
 )
 ```
+
+## Breaking changes in 1.1.0
+
+Following the upgrade to LangExtract 1.6.0, the wrapper mirrors upstream's
+new defaults:
+
+- `fetch_urls` now defaults to `False`: URL strings (including PDF URLs) are
+  treated as literal text unless you pass `fetch_urls=True`. Local PDF paths
+  are unaffected.
+- The default `model_id` is now `gemini-3.5-flash`.
 
 ## License
 

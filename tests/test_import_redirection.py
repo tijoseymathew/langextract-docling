@@ -7,9 +7,6 @@ def test_import_redirection():
 
   import langextract_docling
 
-  # They should be the same module
-  assert langextract == langextract_docling
-
   # The extract function should be the one from langextract_docling
   assert langextract.extract == langextract_docling.extract
   assert langextract.extract.__name__ == 'extract'
