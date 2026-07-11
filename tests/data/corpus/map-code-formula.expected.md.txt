@@ -1,0 +1,5 @@
+```
+print('LXM001')  # ``` fenced backticks inside
+```
+
+$$E = mc^2 + LXM002$$

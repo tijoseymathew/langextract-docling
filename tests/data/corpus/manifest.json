@@ -458,6 +458,262 @@
           "text": "Bernoulli numbers everywhere"
         }
       ]
+    },
+    {
+      "builder": "groups",
+      "case_id": "map-list-group",
+      "probes": [
+        {
+          "expect_refs": [
+            "#/texts/0",
+            "#/texts/1",
+            "#/texts/2"
+          ],
+          "kind": "group",
+          "markers": [
+            "LXM001",
+            "LXM002",
+            "LXM003"
+          ]
+        }
+      ]
+    },
+    {
+      "builder": "groups",
+      "case_id": "map-list-nested",
+      "probes": [
+        {
+          "expect_refs": [
+            "#/texts/0",
+            "#/texts/1",
+            "#/texts/2"
+          ],
+          "kind": "group",
+          "markers": [
+            "LXM001",
+            "LXM002",
+            "LXM003"
+          ]
+        }
+      ]
+    },
+    {
+      "builder": "groups",
+      "case_id": "map-inline-group",
+      "probes": [
+        {
+          "expect_refs": [
+            "#/texts/0",
+            "#/texts/1"
+          ],
+          "kind": "group",
+          "markers": [
+            "LXM001",
+            "LXM002"
+          ]
+        }
+      ]
+    },
+    {
+      "builder": "groups",
+      "case_id": "map-two-lists",
+      "probes": [
+        {
+          "expect_refs": [
+            "#/texts/0",
+            "#/texts/1"
+          ],
+          "kind": "group",
+          "markers": [
+            "LXM001",
+            "LXM002"
+          ]
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect_refs": [
+            "#/texts/3",
+            "#/texts/4"
+          ],
+          "kind": "group",
+          "markers": [
+            "LXM004",
+            "LXM005"
+          ]
+        },
+        {
+          "expect_refs": [
+            "#/texts/0",
+            "#/texts/1",
+            "#/texts/2"
+          ],
+          "from_marker": "LXM002",
+          "kind": "straddle",
+          "to_marker": "LXM003"
+        }
+      ]
+    },
+    {
+      "builder": "groups",
+      "case_id": "map-table",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/tables/0",
+            "label": "table",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/tables/0",
+            "label": "table",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM011"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/tables/0",
+            "label": "table",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM021"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/tables/0",
+            "label": "table",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM101"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/tables/0",
+            "label": "table",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM111"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/tables/0",
+            "label": "table",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM121"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/tables/0",
+            "label": "table",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM201"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/tables/0",
+            "label": "table",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM211"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/tables/0",
+            "label": "table",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM221"
+        }
+      ]
+    },
+    {
+      "builder": "groups",
+      "case_id": "map-table-caption",
+      "probes": [
+        {
+          "expect_refs": [
+            "#/texts/0",
+            "#/tables/0"
+          ],
+          "kind": "group",
+          "markers": [
+            "LXM001",
+            "LXM002",
+            "LXM004"
+          ]
+        }
+      ]
+    },
+    {
+      "builder": "groups",
+      "case_id": "map-picture-caption",
+      "probes": [
+        {
+          "expect_refs": [
+            "#/texts/0",
+            "#/pictures/0"
+          ],
+          "kind": "group",
+          "markers": [
+            "LXM001"
+          ]
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        }
+      ]
+    },
+    {
+      "builder": "groups",
+      "case_id": "map-code-formula",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "code",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "formula",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        }
+      ]
     }
   ],
   "generated_with": {

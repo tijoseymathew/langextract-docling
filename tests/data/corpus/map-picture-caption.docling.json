@@ -1,0 +1,80 @@
+{
+  "body": {
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/pictures/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      }
+    ],
+    "content_layer": "body",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/body"
+  },
+  "form_items": [],
+  "furniture": {
+    "children": [],
+    "content_layer": "furniture",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/furniture"
+  },
+  "groups": [],
+  "key_value_items": [],
+  "name": "map-picture-caption",
+  "pages": {},
+  "pictures": [
+    {
+      "annotations": [],
+      "captions": [
+        {
+          "$ref": "#/texts/0"
+        }
+      ],
+      "children": [],
+      "content_layer": "body",
+      "footnotes": [],
+      "label": "picture",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "references": [],
+      "self_ref": "#/pictures/0"
+    }
+  ],
+  "schema_name": "DoclingDocument",
+  "tables": [],
+  "texts": [
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "orig": "A captioned picture shows LXM001.",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/0",
+      "text": "A captioned picture shows LXM001."
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "orig": "A paragraph after the picture holds LXM002 safely.",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/1",
+      "text": "A paragraph after the picture holds LXM002 safely."
+    }
+  ],
+  "version": "1.10.0"
+}

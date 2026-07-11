@@ -1,0 +1,124 @@
+{
+  "body": {
+    "children": [
+      {
+        "$ref": "#/groups/0"
+      }
+    ],
+    "content_layer": "body",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/body"
+  },
+  "form_items": [],
+  "furniture": {
+    "children": [],
+    "content_layer": "furniture",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/furniture"
+  },
+  "groups": [
+    {
+      "children": [
+        {
+          "$ref": "#/texts/0"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list",
+      "name": "group",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "self_ref": "#/groups/0"
+    },
+    {
+      "children": [
+        {
+          "$ref": "#/texts/1"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list",
+      "name": "group",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "self_ref": "#/groups/1"
+    },
+    {
+      "children": [
+        {
+          "$ref": "#/texts/2"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list",
+      "name": "group",
+      "parent": {
+        "$ref": "#/texts/1"
+      },
+      "self_ref": "#/groups/2"
+    }
+  ],
+  "key_value_items": [],
+  "name": "map-list-nested",
+  "pages": {},
+  "pictures": [],
+  "schema_name": "DoclingDocument",
+  "tables": [],
+  "texts": [
+    {
+      "children": [
+        {
+          "$ref": "#/groups/1"
+        }
+      ],
+      "content_layer": "body",
+      "enumerated": false,
+      "label": "list_item",
+      "marker": "",
+      "orig": "Outer level holds LXM001 up top.",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "prov": [],
+      "self_ref": "#/texts/0",
+      "text": "Outer level holds LXM001 up top."
+    },
+    {
+      "children": [
+        {
+          "$ref": "#/groups/2"
+        }
+      ],
+      "content_layer": "body",
+      "enumerated": false,
+      "label": "list_item",
+      "marker": "",
+      "orig": "Middle level keeps LXM002 nested.",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "prov": [],
+      "self_ref": "#/texts/1",
+      "text": "Middle level keeps LXM002 nested."
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "enumerated": false,
+      "label": "list_item",
+      "marker": "",
+      "orig": "Deep level hides LXM003 below.",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "prov": [],
+      "self_ref": "#/texts/2",
+      "text": "Deep level hides LXM003 below."
+    }
+  ],
+  "version": "1.10.0"
+}

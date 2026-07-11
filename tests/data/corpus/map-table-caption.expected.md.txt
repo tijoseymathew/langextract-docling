@@ -1,0 +1,5 @@
+A captioned table shows LXM001 here.
+
+| head LXM002   | head LXM003   |
+|---------------|---------------|
+| body LXM004   | body LXM005   |

@@ -1,0 +1,62 @@
+{
+  "body": {
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      }
+    ],
+    "content_layer": "body",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/body"
+  },
+  "form_items": [],
+  "furniture": {
+    "children": [],
+    "content_layer": "furniture",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/furniture"
+  },
+  "groups": [],
+  "key_value_items": [],
+  "name": "map-code-formula",
+  "pages": {},
+  "pictures": [],
+  "schema_name": "DoclingDocument",
+  "tables": [],
+  "texts": [
+    {
+      "captions": [],
+      "children": [],
+      "code_language": "unknown",
+      "content_layer": "body",
+      "footnotes": [],
+      "label": "code",
+      "orig": "print('LXM001')  # ``` fenced backticks inside",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "references": [],
+      "self_ref": "#/texts/0",
+      "text": "print('LXM001')  # ``` fenced backticks inside"
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "orig": "E = mc^2 + LXM002",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/1",
+      "text": "E = mc^2 + LXM002"
+    }
+  ],
+  "version": "1.10.0"
+}

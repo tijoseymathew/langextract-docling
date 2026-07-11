@@ -1,0 +1,5 @@
+A captioned picture shows LXM001.
+
+<!-- image -->
+
+A paragraph after the picture holds LXM002 safely.

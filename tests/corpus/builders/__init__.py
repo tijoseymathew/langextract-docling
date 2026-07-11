@@ -21,6 +21,7 @@ _MODULES = [
     "offsets",
     "escaping",
     "repetition",
+    "groups",
 ]
 
 _REGISTRY: dict[str, typing.Callable[[], "BuiltCase"]] = {}
@@ -127,5 +128,19 @@ def straddle_probe(from_marker: str, to_marker: str, items) -> dict:
       "kind": "straddle",
       "from_marker": from_marker,
       "to_marker": to_marker,
+      "expect_refs": [item.self_ref for item in items],
+  }
+
+
+def group_probe(markers, items) -> dict:
+  """A group probe: markers resolve into one shared range, these refs.
+
+  Looking up any of the markers must return exactly one span per listed
+  item, all with the identical [start, end) range (items serialized as one
+  group emit one SpanProvenance per contributing DocItem).
+  """
+  return {
+      "kind": "group",
+      "markers": list(markers),
       "expect_refs": [item.self_ref for item in items],
   }

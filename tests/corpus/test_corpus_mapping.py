@@ -135,6 +135,27 @@ class TestStraddleProbes:
     assert refs == set(probe["expect_refs"])
 
 
+class TestGroupProbes:
+  """spec §5 note: one SpanProvenance per contributing DocItem.
+
+  Every listed marker resolves into the same [start, end) range, which
+  carries exactly one span per expected ref.
+  """
+
+  @pytest.mark.parametrize("case_id_, probe", _probe_params("group"))
+  def test_shared_range_with_one_span_per_ref(self, case_id_, probe):
+    _, text, pmap = _serialized(case_id_)
+    intervals = corpus.resolve_probe(probe, text)
+    shared_ranges = set()
+    for marker, (start, end) in intervals.items():
+      spans = pmap.lookup(start, end)
+      refs = [span.doc_item_ref for span in spans]
+      assert sorted(refs) == sorted(probe["expect_refs"]), marker
+      assert len({(s.start, s.end) for s in spans}) == 1, marker
+      shared_ranges.add((spans[0].start, spans[0].end))
+    assert len(shared_ranges) == 1, "markers resolved to different ranges"
+
+
 class TestEnrichmentProbes:
   """spec §11.4: _attach_provenance mirrors lookup() for char_intervals."""
 
