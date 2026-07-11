@@ -1,0 +1,190 @@
+{
+  "cases": [
+    {
+      "builder": "offsets",
+      "case_id": "map-baseline",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "title",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "section_header",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM004"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/4",
+            "label": "section_header",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM005"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/5",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM006"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/6",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM007"
+        },
+        {
+          "expect_refs": [
+            "#/texts/2",
+            "#/texts/3"
+          ],
+          "from_marker": "LXM003",
+          "kind": "straddle",
+          "to_marker": "LXM004"
+        },
+        {
+          "expect_refs": [
+            "#/texts/5",
+            "#/texts/6"
+          ],
+          "from_marker": "LXM006",
+          "kind": "straddle",
+          "to_marker": "LXM007"
+        }
+      ]
+    },
+    {
+      "builder": "offsets",
+      "case_id": "map-heading-prefix",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "section_header",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "section_header",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "section_header",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM004"
+        }
+      ]
+    },
+    {
+      "builder": "offsets",
+      "case_id": "map-empty-text-item",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect_refs": [
+            "#/texts/0",
+            "#/texts/2"
+          ],
+          "from_marker": "LXM001",
+          "kind": "straddle",
+          "to_marker": "LXM002"
+        }
+      ]
+    },
+    {
+      "builder": "offsets",
+      "case_id": "map-single-item",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        }
+      ]
+    },
+    {
+      "builder": "offsets",
+      "case_id": "map-empty-doc",
+      "probes": []
+    }
+  ],
+  "generated_with": {
+    "docling": "2.112.0",
+    "docling-core": "2.86.0"
+  }
+}

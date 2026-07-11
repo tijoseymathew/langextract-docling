@@ -1,0 +1,3 @@
+The paragraph before the gap holds LXM001 safely.
+
+The paragraph after the gap holds LXM002 safely.

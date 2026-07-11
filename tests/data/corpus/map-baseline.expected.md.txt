@@ -1,0 +1,13 @@
+# Corpus baseline LXM001 report
+
+## First section LXM002 heading
+
+The opening paragraph carries LXM003 in its middle.
+
+A second paragraph mentions LXM004 before ending.
+
+## Second section LXM005 heading
+
+The third paragraph hides LXM006 mid-sentence.
+
+A closing paragraph keeps LXM007 near the end.
