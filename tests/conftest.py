@@ -1,8 +1,29 @@
 """Configuration for pytest that makes tests use langextract_docling instead of langextract."""
 
 import importlib
+import pathlib
 import sys
 from types import ModuleType
+
+import pytest
+
+_REPORT_PDF = pathlib.Path(__file__).parent / 'data' / 'report.pdf'
+
+
+@pytest.fixture(scope='session')
+def report_pdf_path() -> pathlib.Path:
+  """Path to the two-page test PDF, built on demand with reportlab.
+
+  The PDF is generated, not committed: it is gitignored and rebuilt here
+  (deterministic layout) whenever missing. Tests keep referring to the
+  path via their own constants; depending on this fixture (directly or
+  through an autouse hook) guarantees the file exists.
+  """
+  if not _REPORT_PDF.exists():
+    from tests.data.make_fixtures import build_pdf
+
+    build_pdf(_REPORT_PDF)
+  return _REPORT_PDF
 
 
 class LangextractMock(ModuleType):

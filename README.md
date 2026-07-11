@@ -130,6 +130,26 @@ new defaults:
   are unaffected.
 - The default `model_id` is now `gemini-3.5-flash`.
 
+## Development
+
+Install with the test extra and run the suite (live-API tests are opt-in):
+
+```bash
+pip install -e ".[test]"
+pytest -m "not live_api and not requires_pip"
+```
+
+Test PDFs are generated on demand with reportlab and are not committed:
+`tests/data/report.pdf` is gitignored and rebuilt automatically by a
+session fixture when missing.
+
+The provenance mapping (markdown offsets → `SpanProvenance` →
+`extraction.provenance`) is verified by a deterministic synthetic corpus
+under `tests/corpus/` — constructed `DoclingDocument`s with marker-based
+ground truth, regenerated via `python -m tests.corpus.generate`. See
+`tests/corpus/README.md` for the probe schema and the docling-upgrade
+regeneration flow.
+
 ## License
 
 MIT License

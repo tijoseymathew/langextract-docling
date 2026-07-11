@@ -14,6 +14,11 @@ PDF_PATH = DATA_DIR / "report.pdf"
 PDF_URL = "https://example.com/fake/report.pdf"
 
 
+@pytest.fixture(autouse=True)
+def _needs_generated_pdf(report_pdf_path):
+  """All tests here read the generated (gitignored) report.pdf."""
+
+
 def _fake_extract_returning(extractions):
   """Returns a mock _original_extract echoing the text it received."""
 

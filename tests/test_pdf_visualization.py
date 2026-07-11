@@ -15,6 +15,12 @@ import langextract_docling as lx
 DATA_DIR = pathlib.Path(__file__).parent / "data"
 PDF_PATH = DATA_DIR / "report.pdf"
 
+
+@pytest.fixture(autouse=True)
+def _needs_generated_pdf(report_pdf_path):
+  """All tests here read the generated (gitignored) report.pdf."""
+
+
 # A box near the top of report.pdf's A4 page, in BOTTOMLEFT coordinates.
 BBOX = (72.0, 780.0, 300.0, 730.0)
 

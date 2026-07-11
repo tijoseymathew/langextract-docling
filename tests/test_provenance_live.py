@@ -15,6 +15,11 @@ import langextract_docling as lx
 PDF_PATH = pathlib.Path(__file__).parent / "data" / "report.pdf"
 
 
+@pytest.fixture(autouse=True)
+def _needs_generated_pdf(report_pdf_path):
+  """All tests here read the generated (gitignored) report.pdf."""
+
+
 def _model_id() -> str:
   model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
   # Accept litellm-style ids like "gemini/gemini-3.1-flash-lite"

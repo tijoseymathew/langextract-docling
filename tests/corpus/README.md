@@ -73,6 +73,16 @@ pytest tests/corpus
 
 No network, no API keys, no `DocumentConverter` import.
 
+## Real-PDF fixture (end-to-end test)
+
+The end-to-end `live_api` test (`tests/test_provenance_live.py`) runs a
+real PDF through docling + Gemini + provenance. Its fixture is the
+generated two-page `tests/data/report.pdf` — built on demand with
+reportlab by a session fixture in `tests/conftest.py`, gitignored, never
+committed. Its ground truth is deliberately weak (every aligned
+extraction maps to ≥1 location with an in-range page number): docling's
+extraction quality is out of scope here.
+
 ## Regenerating fixtures
 
 ```bash

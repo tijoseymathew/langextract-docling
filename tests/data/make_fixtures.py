@@ -1,7 +1,6 @@
 """Regenerates the DoclingDocument JSON fixtures and golden markdown files.
 
-Run from the repository root (requires reportlab in addition to the package
-dependencies):
+Run from the repository root (reportlab comes with the [test] extra):
 
     python tests/data/make_fixtures.py
 
@@ -107,8 +106,9 @@ def main():
   from langextract_docling.markdown_chunker import HierarchicalMarkdownChunker
 
   with tempfile.TemporaryDirectory() as tmp:
-    # The PDF itself is checked in too; extract() pipeline tests feed it
-    # through the real docling conversion.
+    # The PDF is generated, never committed (gitignored); the session
+    # fixture in tests/conftest.py rebuilds it on demand for the tests
+    # that feed it through the real docling conversion.
     pdf_path = DATA_DIR / "report.pdf"
     build_pdf(pdf_path)
     md_path = Path(tmp) / "notes.md"

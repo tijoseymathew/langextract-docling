@@ -33,6 +33,9 @@ test = [
     "pytest>=7.4.0",
     "tomli>=2.0.0",
     "openai>=2.7.1",
+    # Builds the gitignored test PDF on demand (tests/conftest.py) and
+    # regenerates fixtures via tests/data/make_fixtures.py.
+    "reportlab>=4.0.0",
 ]
 
 [tool.setuptools.packages.find]

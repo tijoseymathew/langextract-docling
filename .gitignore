@@ -48,3 +48,6 @@ Thumbs.db
 *.tmp
 *.bak
 *.backup
+
+# Generated test fixtures (built on demand; see tests/conftest.py)
+tests/data/report.pdf
