@@ -317,6 +317,24 @@ def _attach_provenance(annotated_doc, provenance_map):
   return annotated_doc
 
 
+def visualize(*args: Any, **kwargs: Any):
+  """Top-level API passthrough: langextract.visualization.visualize."""
+  from langextract import visualization
+
+  return visualization.visualize(*args, **kwargs)
+
+
+def visualize_pdf(*args: Any, **kwargs: Any):
+  """Top-level API: animated HTML of extraction bboxes on PDF pages.
+
+  The PDF counterpart of lx.visualize(). See
+  langextract_docling.pdf_visualization.visualize_pdf.
+  """
+  from langextract_docling import pdf_visualization
+
+  return pdf_visualization.visualize_pdf(*args, **kwargs)
+
+
 # PEP 562 lazy loading - same as original langextract
 def __getattr__(name: str) -> Any:
   if name in _CACHE:
@@ -333,8 +351,9 @@ def __getattr__(name: str) -> Any:
 
 
 def __dir__():
-  # Return the same attributes as the original langextract, plus our wrapped extract
-  original_attrs = ["extract"]  # Include our wrapped extract function
+  # Return the same attributes as the original langextract, plus our wrapped
+  # extract and the PDF highlight renderer
+  original_attrs = ["extract", "visualize", "visualize_pdf"]
   lazy_attrs = list(_LAZY_MODULES.keys())
   return sorted(original_attrs + lazy_attrs)
 
