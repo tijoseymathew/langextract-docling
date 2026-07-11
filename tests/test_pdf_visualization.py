@@ -95,7 +95,10 @@ class TestVisualizePdfHtml:
     assert "<style>" in html
     assert 'id="lxPdfAttributes"' in html
     assert 'class="lx-pdf-window"' in html
-    assert "▶️ Play" in html and "⏮ Previous" in html and "⏭ Next" in html
+    # Control glyphs are encoding-independent HTML entities, not raw emoji,
+    # so a file saved without a UTF-8 charset does not mojibake them.
+    assert "&#9654; Play" in html
+    assert "&#9198; Previous" in html and "&#9197; Next" in html
     assert 'class="lx-progress-slider"' in html
     assert "<script>" in html and "setInterval" in html
 

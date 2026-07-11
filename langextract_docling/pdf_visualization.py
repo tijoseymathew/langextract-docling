@@ -496,9 +496,9 @@ def _build_visualization_html(
       {page_window_html}
       <div class="lx-controls">
         <div class="lx-button-row">
-          <button class="lx-control-btn" id="lxPdfPlayBtn">▶️ Play</button>
-          <button class="lx-control-btn" id="lxPdfPrevBtn">⏮ Previous</button>
-          <button class="lx-control-btn" id="lxPdfNextBtn">⏭ Next</button>
+          <button class="lx-control-btn" id="lxPdfPlayBtn">&#9654; Play</button>
+          <button class="lx-control-btn" id="lxPdfPrevBtn">&#9198; Previous</button>
+          <button class="lx-control-btn" id="lxPdfNextBtn">&#9197; Next</button>
         </div>
         <div class="lx-progress-container">
           <input type="range" id="lxPdfSlider" class="lx-progress-slider"
@@ -531,7 +531,7 @@ def _build_visualization_html(
           document.getElementById('lxPdfEntityInfo').textContent = (currentIndex + 1) + '/' + extractions.length;
           document.getElementById('lxPdfPageInfo').textContent = extraction.pages.join(', ');
           slider.value = currentIndex;
-          playBtn.textContent = isPlaying ? '⏸ Pause' : '▶️ Play';
+          playBtn.textContent = isPlaying ? '\\u23F8 Pause' : '\\u25B6 Play';
 
           // Page the viewer to the current extraction's page(s), hiding others
           // so a multi-page document stays focused instead of scrolling a stack.
