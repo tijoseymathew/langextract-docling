@@ -181,6 +181,168 @@
       "builder": "offsets",
       "case_id": "map-empty-doc",
       "probes": []
+    },
+    {
+      "builder": "escaping",
+      "case_id": "map-md-specials",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM004"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/4",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM005"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/5",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM006"
+        }
+      ]
+    },
+    {
+      "builder": "escaping",
+      "case_id": "map-fake-syntax",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM004"
+        }
+      ]
+    },
+    {
+      "builder": "escaping",
+      "case_id": "map-unicode",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM004"
+        },
+        {
+          "expect_refs": [
+            "#/texts/0",
+            "#/texts/1"
+          ],
+          "from_marker": "LXM001",
+          "kind": "straddle",
+          "to_marker": "LXM002"
+        },
+        {
+          "expect_refs": [
+            "#/texts/2",
+            "#/texts/3"
+          ],
+          "from_marker": "LXM003",
+          "kind": "straddle",
+          "to_marker": "LXM004"
+        }
+      ]
     }
   ],
   "generated_with": {

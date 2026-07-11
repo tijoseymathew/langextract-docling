@@ -19,6 +19,7 @@ from docling_core.types.doc.document import ProvenanceItem
 # Catalog-area modules (test-spec §5.1-§5.6); imported by all_cases().
 _MODULES = [
     "offsets",
+    "escaping",
 ]
 
 _REGISTRY: dict[str, typing.Callable[[], "BuiltCase"]] = {}
