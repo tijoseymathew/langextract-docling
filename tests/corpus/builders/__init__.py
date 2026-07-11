@@ -23,6 +23,7 @@ _MODULES = [
     "repetition",
     "groups",
     "locations",
+    "exclusions",
 ]
 
 _REGISTRY: dict[str, typing.Callable[[], "BuiltCase"]] = {}
@@ -131,6 +132,11 @@ def straddle_probe(from_marker: str, to_marker: str, items) -> dict:
       "to_marker": to_marker,
       "expect_refs": [item.self_ref for item in items],
   }
+
+
+def absent_probe(marker: str, item: DocItem) -> dict:
+  """An absent probe: the item's text must never reach the output."""
+  return {"kind": "absent", "marker": marker, "ref": item.self_ref}
 
 
 def group_probe(markers, items) -> dict:

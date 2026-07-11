@@ -156,6 +156,17 @@ class TestGroupProbes:
     assert len(shared_ranges) == 1, "markers resolved to different ranges"
 
 
+class TestAbsentProbes:
+  """spec §4: excluded/furniture markers never reach the output."""
+
+  @pytest.mark.parametrize("case_id_, probe", _probe_params("absent"))
+  def test_marker_not_in_serialized_text(self, case_id_, probe):
+    _, text, pmap = _serialized(case_id_)
+    assert probe["marker"] not in text
+    refs = {span.doc_item_ref for span in pmap.spans}
+    assert probe.get("ref") not in refs
+
+
 class TestEnrichmentProbes:
   """spec §11.4: _attach_provenance mirrors lookup() for char_intervals."""
 

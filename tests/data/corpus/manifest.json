@@ -1205,6 +1205,122 @@
           "marker": "LXM004"
         }
       ]
+    },
+    {
+      "builder": "exclusions",
+      "case_id": "map-furniture",
+      "probes": [
+        {
+          "kind": "absent",
+          "marker": "LXM101",
+          "ref": "#/texts/0"
+        },
+        {
+          "kind": "absent",
+          "marker": "LXM102",
+          "ref": "#/texts/2"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect_refs": [
+            "#/texts/1",
+            "#/texts/3"
+          ],
+          "from_marker": "LXM001",
+          "kind": "straddle",
+          "to_marker": "LXM002"
+        }
+      ]
+    },
+    {
+      "builder": "exclusions",
+      "case_id": "map-excluded-refs",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "text",
+            "locations": [
+              {
+                "bbox": [
+                  10.0,
+                  20.0,
+                  400.0,
+                  40.0
+                ],
+                "charspan": [
+                  0,
+                  42
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 1
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "kind": "absent",
+          "marker": "LXM201",
+          "ref": "#/texts/1"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "text",
+            "locations": [
+              {
+                "bbox": [
+                  10.0,
+                  60.0,
+                  400.0,
+                  80.0
+                ],
+                "charspan": [
+                  0,
+                  48
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 1
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect_refs": [
+            "#/texts/0",
+            "#/texts/2"
+          ],
+          "from_marker": "LXM001",
+          "kind": "straddle",
+          "to_marker": "LXM002"
+        }
+      ],
+      "serializer_kwargs": {
+        "pages": [
+          1
+        ]
+      }
     }
   ],
   "generated_with": {

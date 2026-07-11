@@ -24,6 +24,29 @@ the answer is compared against the manifest — no offset prediction, no
 circularity. Refs are read back from constructed items (`item.self_ref`),
 never assumed by index.
 
+### Probe kinds
+
+- `span` — the marker's (or the Nth `occurrence` of a repeated `text`'s)
+  enclosing span maps to exactly the recorded item, label, and locations.
+- `straddle` — an interval from inside one marker's item to inside
+  another's returns exactly `expect_refs`.
+- `group` — every listed marker resolves into one shared `[start, end)`
+  range carrying one span per ref in `expect_refs` (lists, inline groups,
+  captioned tables/pictures).
+- `absent` — the marker (furniture or param-excluded item) never reaches
+  the serialized output; `ref` records the excluded item.
+
+Two probe families are implicit for every case: **gap probes** (every
+uncovered run of text is exactly the `"\n\n"` delimiter and `lookup()`
+over it is empty) and **enrichment probes** (each span/straddle interval
+is injected as an `Extraction.char_interval` through `_attach_provenance`
+and must yield the `lookup()` answer, plus `char_interval=None` → `None`
+and zero-length-interval → `[]`).
+
+Cases needing serializer parameters (e.g. the `pages` filter exercising
+the excluded-refs branch) carry `serializer_kwargs` in their manifest
+entry, applied symmetrically at generation and test time.
+
 ## Layout
 
 - `__init__.py` — `load_case()` / `resolve_probe()` helpers.

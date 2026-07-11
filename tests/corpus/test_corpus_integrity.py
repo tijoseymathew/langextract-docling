@@ -6,6 +6,7 @@ reference chunker — so a broken fixture never masquerades as a mapping bug.
 
 import pathlib
 
+from docling_core.types.doc.document import ContentLayer
 from docling_core.types.doc.document import DoclingDocument
 import pytest
 
@@ -146,7 +147,11 @@ class TestGroundTruthSelfConsistency:
   def test_expected_refs_and_locations_match_document(self, case):
     items = {
         item.self_ref: item
-        for item, _ in case.doc.iterate_items(with_groups=True)
+        for item, _ in case.doc.iterate_items(
+            with_groups=True,
+            # Absent probes may point at furniture items.
+            included_content_layers=set(ContentLayer),
+        )
     }
     for probe in case.probes:
       expects = [probe["expect"]] if "expect" in probe else []
@@ -154,7 +159,10 @@ class TestGroundTruthSelfConsistency:
         item = items[expect["doc_item_ref"]]  # KeyError = dangling ref
         assert expect["label"] == str(item.label)
         assert expect["locations"] == builders.expected_locations(item)
-      for ref in probe.get("expect_refs", []):
+      refs = list(probe.get("expect_refs", []))
+      if "ref" in probe:  # absent probes record the excluded item's ref
+        refs.append(probe["ref"])
+      for ref in refs:
         assert ref in items, f"dangling ref {ref}"
 
 
