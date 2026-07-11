@@ -714,6 +714,497 @@
           "marker": "LXM002"
         }
       ]
+    },
+    {
+      "builder": "locations",
+      "case_id": "prov-none",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "section_header",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "section_header",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM004"
+        }
+      ]
+    },
+    {
+      "builder": "locations",
+      "case_id": "prov-single",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "section_header",
+            "locations": [
+              {
+                "bbox": [
+                  10.0,
+                  20.0,
+                  210.0,
+                  40.0
+                ],
+                "charspan": [
+                  0,
+                  30
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 1
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "text",
+            "locations": [
+              {
+                "bbox": [
+                  10.0,
+                  60.0,
+                  350.0,
+                  80.0
+                ],
+                "charspan": [
+                  0,
+                  46
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 1
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "section_header",
+            "locations": [
+              {
+                "bbox": [
+                  15.0,
+                  25.0,
+                  215.0,
+                  45.0
+                ],
+                "charspan": [
+                  0,
+                  30
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 2
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": [
+              {
+                "bbox": [
+                  15.0,
+                  65.0,
+                  355.0,
+                  85.0
+                ],
+                "charspan": [
+                  0,
+                  46
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 3
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM004"
+        }
+      ]
+    },
+    {
+      "builder": "locations",
+      "case_id": "prov-multi-location",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "section_header",
+            "locations": [
+              {
+                "bbox": [
+                  10.0,
+                  20.0,
+                  210.0,
+                  40.0
+                ],
+                "charspan": [
+                  0,
+                  30
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 1
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "text",
+            "locations": [
+              {
+                "bbox": [
+                  10.0,
+                  700.0,
+                  350.0,
+                  780.0
+                ],
+                "charspan": [
+                  0,
+                  20
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 1
+              },
+              {
+                "bbox": [
+                  10.0,
+                  30.0,
+                  350.0,
+                  60.0
+                ],
+                "charspan": [
+                  20,
+                  46
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 2
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "section_header",
+            "locations": [
+              {
+                "bbox": [
+                  15.0,
+                  25.0,
+                  215.0,
+                  45.0
+                ],
+                "charspan": [
+                  0,
+                  30
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 2
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM004"
+        }
+      ]
+    },
+    {
+      "builder": "locations",
+      "case_id": "prov-partial-charspan",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "section_header",
+            "locations": [
+              {
+                "bbox": [
+                  10.0,
+                  20.0,
+                  210.0,
+                  40.0
+                ],
+                "charspan": [
+                  4,
+                  19
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 1
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "text",
+            "locations": [
+              {
+                "bbox": [
+                  10.0,
+                  60.0,
+                  350.0,
+                  80.0
+                ],
+                "charspan": [
+                  0,
+                  0
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 1
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "section_header",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM004"
+        }
+      ]
+    },
+    {
+      "builder": "locations",
+      "case_id": "prov-coord-origins",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "section_header",
+            "locations": [
+              {
+                "bbox": [
+                  10.0,
+                  20.0,
+                  210.0,
+                  40.0
+                ],
+                "charspan": [
+                  0,
+                  30
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 1
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "text",
+            "locations": [
+              {
+                "bbox": [
+                  10.0,
+                  780.0,
+                  350.0,
+                  760.0
+                ],
+                "charspan": [
+                  0,
+                  46
+                ],
+                "coord_origin": "BOTTOMLEFT",
+                "page_no": 1
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "section_header",
+            "locations": [
+              {
+                "bbox": [
+                  15.0,
+                  800.0,
+                  215.0,
+                  770.0
+                ],
+                "charspan": [
+                  0,
+                  30
+                ],
+                "coord_origin": "BOTTOMLEFT",
+                "page_no": 2
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": [
+              {
+                "bbox": [
+                  15.0,
+                  65.0,
+                  355.0,
+                  85.0
+                ],
+                "charspan": [
+                  0,
+                  46
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 2
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM004"
+        }
+      ]
+    },
+    {
+      "builder": "locations",
+      "case_id": "prov-mixed",
+      "probes": [
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/0",
+            "label": "section_header",
+            "locations": [
+              {
+                "bbox": [
+                  10.0,
+                  20.0,
+                  210.0,
+                  40.0
+                ],
+                "charspan": [
+                  0,
+                  30
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 1
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM001"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/1",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM002"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/2",
+            "label": "section_header",
+            "locations": [
+              {
+                "bbox": [
+                  15.0,
+                  25.0,
+                  215.0,
+                  45.0
+                ],
+                "charspan": [
+                  0,
+                  30
+                ],
+                "coord_origin": "TOPLEFT",
+                "page_no": 2
+              }
+            ]
+          },
+          "kind": "span",
+          "marker": "LXM003"
+        },
+        {
+          "expect": {
+            "doc_item_ref": "#/texts/3",
+            "label": "text",
+            "locations": []
+          },
+          "kind": "span",
+          "marker": "LXM004"
+        }
+      ]
     }
   ],
   "generated_with": {

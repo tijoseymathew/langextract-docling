@@ -22,6 +22,7 @@ _MODULES = [
     "escaping",
     "repetition",
     "groups",
+    "locations",
 ]
 
 _REGISTRY: dict[str, typing.Callable[[], "BuiltCase"]] = {}
