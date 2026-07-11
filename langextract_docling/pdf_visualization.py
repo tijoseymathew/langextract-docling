@@ -68,9 +68,12 @@ _VISUALIZATION_CSS = textwrap.dedent("""\
     }
     .lx-pdf-box {
       position: absolute; box-sizing: border-box; border: 2px solid;
-      border-radius: 2px;
+      border-radius: 2px; cursor: pointer; opacity: 0.35;
+      transition: opacity 0.2s ease-in-out;
     }
+    .lx-pdf-box:hover { opacity: 0.7; }
     .lx-pdf-box.lx-current-highlight {
+      opacity: 1;
       border-color: #ff4444 !important;
       box-shadow: 0 0 0 3px rgba(255,68,68,0.35);
       animation: lx-pdf-pulse 1s ease-in-out;
