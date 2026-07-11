@@ -89,8 +89,10 @@ with open("results.provenance.json", "w") as f:
 interactive HTML widget showing the rendered source pages with every
 extraction's bounding boxes overlaid, colored per extraction class (same
 colors `lx.visualize()` assigns). Play/pause, previous/next, and a progress
-slider step through the extractions, scrolling the current highlight into
-view and showing its class, text, and attributes:
+slider step through the extractions. The viewer pages to whichever page the
+current extraction lives on (one page at a time, so multi-page documents stay
+focused), spotlights its box while dimming the rest, and shows its class,
+text, and attributes. Click any box to jump straight to that extraction:
 
 ```python
 import langextract_docling as lx
