@@ -83,6 +83,40 @@ with open("results.provenance.json", "w") as f:
     json.dump(provenance_to_dict(result), f)
 ```
 
+## PDF highlight visualization
+
+`visualize_pdf()` is the PDF counterpart of `lx.visualize()`: an animated,
+interactive HTML widget showing the rendered source pages with every
+extraction's bounding boxes overlaid, colored per extraction class (same
+colors `lx.visualize()` assigns). Play/pause, previous/next, and a progress
+slider step through the extractions, scrolling the current highlight into
+view and showing its class, text, and attributes:
+
+```python
+import langextract_docling as lx
+
+result = lx.extract(
+    text_or_documents="paper.pdf",
+    prompt_description="Extract author names",
+    examples=[...],
+)
+
+lx.visualize_pdf(result)  # displays inline in a notebook
+
+html = lx.visualize_pdf(result)  # plain HTML string outside notebooks
+with open("highlights.html", "w") as f:
+    f.write(html.data if hasattr(html, "data") else html)
+```
+
+The HTML is fully self-contained (pages are embedded as base64 PNGs); only
+pages with at least one highlight are included. The source PDF path is taken
+from the provenance map; pass `pdf_path=...` when the document came from a
+URL. Optional keywords: `animation_speed` (seconds between extractions),
+`show_legend`, and `scale` (rasterization scale, 1.0 = 72 dpi). Because
+provenance granularity is the document item, a highlight covers the whole
+item the extraction came from, and every item of a list group is boxed when
+an extraction lands in one of them.
+
 ## Breaking changes in 1.1.0
 
 Following the upgrade to LangExtract 1.6.0, the wrapper mirrors upstream's
