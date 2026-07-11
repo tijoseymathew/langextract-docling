@@ -60,6 +60,7 @@ _VISUALIZATION_CSS = textwrap.dedent("""\
       box-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
     .lx-pdf-page:last-child { margin-bottom: 0; }
+    .lx-pdf-page.lx-pdf-page-hidden { display: none; }
     .lx-pdf-page img { display: block; width: 100%; height: auto; }
     .lx-pdf-page-label {
       position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.55);
@@ -432,10 +433,15 @@ def _build_page_window_html(
           "</div>"
       )
 
+  # Only the first extraction's page(s) are visible initially; the animation
+  # pages the viewer to whichever page(s) the current extraction lives on.
+  first_pages = {box["page"] for box in boxes_per_extraction[0]}
+
   page_parts = []
   for page_no in sorted(pages):
+    hidden = "" if page_no in first_pages else " lx-pdf-page-hidden"
     page_parts.append(
-        f'<div class="lx-pdf-page" data-page="{page_no}">'
+        f'<div class="lx-pdf-page{hidden}" data-page="{page_no}">'
         f'<img src="{pages[page_no]["data_uri"]}" alt="Page {page_no}">'
         f'{"".join(boxes_by_page[page_no])}'
         f'<div class="lx-pdf-page-label">Page {page_no}</div>'
@@ -521,6 +527,14 @@ def _build_visualization_html(
           document.getElementById('lxPdfPageInfo').textContent = extraction.pages.join(', ');
           slider.value = currentIndex;
           playBtn.textContent = isPlaying ? '⏸ Pause' : '▶️ Play';
+
+          // Page the viewer to the current extraction's page(s), hiding others
+          // so a multi-page document stays focused instead of scrolling a stack.
+          const activePages = new Set(extraction.pages);
+          document.querySelectorAll('#lxPdfWindow .lx-pdf-page').forEach((pageEl) => {{
+            const pageNo = parseInt(pageEl.getAttribute('data-page'), 10);
+            pageEl.classList.toggle('lx-pdf-page-hidden', !activePages.has(pageNo));
+          }});
 
           document.querySelectorAll('#lxPdfWindow .lx-current-highlight').forEach(
             (box) => box.classList.remove('lx-current-highlight'));
