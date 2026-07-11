@@ -485,6 +485,7 @@ def _build_visualization_html(
       _prepare_extraction_data(extractions, boxes_per_extraction)
   )
   first_pages = sorted({box["page"] for box in boxes_per_extraction[0]})
+  total_pages = len(pages)
 
   return textwrap.dedent(f"""
     <div class="lx-pdf-wrapper">
@@ -506,6 +507,7 @@ def _build_visualization_html(
         <div class="lx-status-text">
           Entity <span id="lxPdfEntityInfo">1/{len(extractions)}</span> |
           Page <span id="lxPdfPageInfo">{", ".join(map(str, first_pages))}</span>
+          of {total_pages}
         </div>
       </div>
     </div>
@@ -575,6 +577,14 @@ def _build_visualization_html(
         document.getElementById('lxPdfNextBtn').addEventListener('click', nextExtraction);
         slider.addEventListener('input', () => {{
           currentIndex = parseInt(slider.value, 10);
+          updateDisplay();
+        }});
+
+        // Click any box to jump to its extraction.
+        document.getElementById('lxPdfWindow').addEventListener('click', (event) => {{
+          const box = event.target.closest('.lx-pdf-box');
+          if (!box) return;
+          currentIndex = parseInt(box.getAttribute('data-idx'), 10);
           updateDisplay();
         }});
 
