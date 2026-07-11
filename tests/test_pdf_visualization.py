@@ -204,6 +204,47 @@ class TestVisualizePdfHtml:
     assert "lx-pdf-window" in html
 
 
+class TestPagePagingAndFocus:
+  """The PDF-specific UX: one page at a time, current box spotlighted."""
+
+  def _two_page_doc(self):
+    # "finding" (pos 0) on page 1, "table" (pos 100) on page 2.
+    page1 = _extraction_with_provenance(start_pos=0, page_no=1)
+    page2 = _extraction_with_provenance(
+        cls="artifact", text="Results table", start_pos=100, page_no=2
+    )
+    return _highlighted_doc(extractions=[page1, page2])
+
+  def test_pages_after_the_first_start_hidden(self):
+    html = pdf_visualization.visualize_pdf(self._two_page_doc())
+    # Page 1 (holds the first extraction) is visible; page 2 starts hidden.
+    assert re.search(r'class="lx-pdf-page" data-page="1"', html)
+    assert re.search(
+        r'class="lx-pdf-page lx-pdf-page-hidden" data-page="2"', html
+    )
+
+  def test_animation_pages_between_pages(self):
+    html = pdf_visualization.visualize_pdf(self._two_page_doc())
+    # The script toggles page visibility from the current extraction's pages.
+    assert "activePages" in html
+    assert "lx-pdf-page-hidden" in html and "classList.toggle" in html
+
+  def test_non_current_boxes_are_dimmed(self):
+    html = pdf_visualization.visualize_pdf(self._two_page_doc())
+    # Boxes default to reduced opacity; the current one is brought to full.
+    assert re.search(r"\.lx-pdf-box\s*\{[^}]*opacity:\s*0\.35", html)
+    assert re.search(r"\.lx-current-highlight\s*\{[^}]*opacity:\s*1", html)
+
+  def test_boxes_are_clickable_to_jump(self):
+    html = pdf_visualization.visualize_pdf(self._two_page_doc())
+    assert "cursor: pointer" in html
+    assert "getElementById('lxPdfWindow').addEventListener('click'" in html
+
+  def test_status_shows_total_page_count(self):
+    html = pdf_visualization.visualize_pdf(self._two_page_doc())
+    assert re.search(r"lxPdfPageInfo\">1</span>\s*of 2", html)
+
+
 class TestEndToEndPipeline:
 
   def test_extract_then_visualize_real_pdf(self):
