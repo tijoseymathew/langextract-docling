@@ -52,11 +52,12 @@ _VISUALIZATION_CSS = textwrap.dedent("""\
     <style>
     .lx-pdf-wrapper { max-width: 100%; font-family: Arial, sans-serif; }
     .lx-pdf-window {
-      border: 1px solid #90caf9; max-height: 620px; overflow-y: auto;
+      border: 1px solid #90caf9; max-height: 620px; overflow: auto;
       margin-bottom: 12px; background: #eceff1; padding: 12px;
     }
     .lx-pdf-page {
-      position: relative; margin: 0 auto 12px auto; max-width: 100%;
+      position: relative; margin: 0 auto 12px auto;
+      width: var(--lx-zoom-width, 100%); max-width: none;
       box-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
     .lx-pdf-page:last-child { margin-bottom: 0; }
@@ -83,6 +84,24 @@ _VISUALIZATION_CSS = textwrap.dedent("""\
       0% { box-shadow: 0 0 0 3px rgba(255,68,68,0.35); }
       50% { box-shadow: 0 0 0 6px rgba(255,0,0,0.45); }
       100% { box-shadow: 0 0 0 3px rgba(255,68,68,0.35); }
+    }
+    .lx-pdf-toolbar {
+      display: flex; align-items: center; gap: 6px; justify-content: flex-end;
+      margin-bottom: 8px;
+    }
+    .lx-pdf-toolbar-label {
+      font-size: 12px; color: #666; margin-right: auto;
+    }
+    .lx-zoom-btn {
+      background: #fff; color: #4285f4; border: 1px solid #90caf9;
+      border-radius: 4px; min-width: 30px; height: 28px; padding: 0 8px;
+      cursor: pointer; font-size: 14px; font-weight: 600; line-height: 1;
+      transition: background-color 0.2s;
+    }
+    .lx-zoom-btn:hover { background: #e8f0fe; }
+    .lx-zoom-level {
+      font-size: 12px; color: #444; min-width: 46px; text-align: center;
+      font-variant-numeric: tabular-nums;
     }
     .lx-controls {
       background: #fafafa; border: 1px solid #90caf9; border-radius: 8px;
@@ -493,6 +512,13 @@ def _build_visualization_html(
         {legend_html}
         <div id="lxPdfAttributes"></div>
       </div>
+      <div class="lx-pdf-toolbar">
+        <span class="lx-pdf-toolbar-label">Zoom</span>
+        <button class="lx-zoom-btn" id="lxPdfZoomOut" title="Zoom out">&minus;</button>
+        <span class="lx-zoom-level" id="lxPdfZoomLevel">100%</span>
+        <button class="lx-zoom-btn" id="lxPdfZoomIn" title="Zoom in">+</button>
+        <button class="lx-zoom-btn" id="lxPdfZoomFit" title="Fit to width">Fit</button>
+      </div>
       {page_window_html}
       <div class="lx-controls">
         <div class="lx-button-row">
@@ -522,6 +548,29 @@ def _build_visualization_html(
 
         const playBtn = document.getElementById('lxPdfPlayBtn');
         const slider = document.getElementById('lxPdfSlider');
+        const windowEl = document.getElementById('lxPdfWindow');
+        const zoomLevel = document.getElementById('lxPdfZoomLevel');
+
+        const MIN_ZOOM = 0.5, MAX_ZOOM = 4.0, ZOOM_STEP = 0.25;
+        let zoom = 1.0;
+
+        function applyZoom() {{
+          windowEl.style.setProperty('--lx-zoom-width', (zoom * 100) + '%');
+          zoomLevel.textContent = Math.round(zoom * 100) + '%';
+        }}
+
+        function setZoom(value, keepCurrentInView) {{
+          zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100));
+          applyZoom();
+          if (keepCurrentInView) scrollCurrentIntoView();
+        }}
+
+        function scrollCurrentIntoView() {{
+          const box = document.querySelector(
+            '#lxPdfWindow .lx-pdf-box[data-idx="' + currentIndex + '"]');
+          if (box) box.scrollIntoView(
+            {{block: 'center', inline: 'center', behavior: 'smooth'}});
+        }}
 
         function updateDisplay() {{
           const extraction = extractions[currentIndex];
@@ -546,9 +595,7 @@ def _build_visualization_html(
           const boxes = document.querySelectorAll(
             '#lxPdfWindow .lx-pdf-box[data-idx="' + currentIndex + '"]');
           boxes.forEach((box) => box.classList.add('lx-current-highlight'));
-          if (boxes.length) {{
-            boxes[0].scrollIntoView({{block: 'center', behavior: 'smooth'}});
-          }}
+          scrollCurrentIntoView();
         }}
 
         function nextExtraction() {{
@@ -581,13 +628,28 @@ def _build_visualization_html(
         }});
 
         // Click any box to jump to its extraction.
-        document.getElementById('lxPdfWindow').addEventListener('click', (event) => {{
+        windowEl.addEventListener('click', (event) => {{
           const box = event.target.closest('.lx-pdf-box');
           if (!box) return;
           currentIndex = parseInt(box.getAttribute('data-idx'), 10);
           updateDisplay();
         }});
 
+        document.getElementById('lxPdfZoomIn').addEventListener(
+          'click', () => setZoom(zoom + ZOOM_STEP, true));
+        document.getElementById('lxPdfZoomOut').addEventListener(
+          'click', () => setZoom(zoom - ZOOM_STEP, true));
+        document.getElementById('lxPdfZoomFit').addEventListener(
+          'click', () => setZoom(1.0, true));
+
+        // Ctrl/Cmd + scroll wheel zooms the canvas, like a document viewer.
+        windowEl.addEventListener('wheel', (event) => {{
+          if (!event.ctrlKey && !event.metaKey) return;
+          event.preventDefault();
+          setZoom(zoom + (event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP), false);
+        }}, {{passive: false}});
+
+        applyZoom();
         updateDisplay();
       }})();
     </script>""")

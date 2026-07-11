@@ -241,11 +241,42 @@ class TestPagePagingAndFocus:
   def test_boxes_are_clickable_to_jump(self):
     html = pdf_visualization.visualize_pdf(self._two_page_doc())
     assert "cursor: pointer" in html
-    assert "getElementById('lxPdfWindow').addEventListener('click'" in html
+    assert "windowEl.addEventListener('click'" in html
 
   def test_status_shows_total_page_count(self):
     html = pdf_visualization.visualize_pdf(self._two_page_doc())
     assert re.search(r"lxPdfPageInfo\">1</span>\s*of 2", html)
+
+
+class TestZoom:
+  """The canvas zoom controls."""
+
+  def test_zoom_toolbar_is_present(self):
+    html = pdf_visualization.visualize_pdf(_highlighted_doc())
+    assert 'class="lx-pdf-toolbar"' in html
+    assert 'id="lxPdfZoomIn"' in html
+    assert 'id="lxPdfZoomOut"' in html
+    assert 'id="lxPdfZoomFit"' in html
+    # Starts at 100%.
+    assert 'id="lxPdfZoomLevel">100%' in html
+
+  def test_zoom_scales_page_width_and_scrolls_both_axes(self):
+    html = pdf_visualization.visualize_pdf(_highlighted_doc())
+    # The page width is driven by a CSS variable the script updates, and the
+    # window scrolls on both axes so a zoomed page is fully reachable.
+    assert "width: var(--lx-zoom-width, 100%)" in html
+    assert re.search(r"\.lx-pdf-window\s*\{[^}]*overflow:\s*auto", html)
+    assert "setProperty('--lx-zoom-width'" in html
+
+  def test_zoom_is_clamped(self):
+    html = pdf_visualization.visualize_pdf(_highlighted_doc())
+    assert "MIN_ZOOM = 0.5" in html and "MAX_ZOOM = 4.0" in html
+    assert "Math.min(MAX_ZOOM, Math.max(MIN_ZOOM" in html
+
+  def test_ctrl_wheel_zoom(self):
+    html = pdf_visualization.visualize_pdf(_highlighted_doc())
+    assert "addEventListener('wheel'" in html
+    assert "event.ctrlKey" in html and "event.metaKey" in html
 
 
 class TestEndToEndPipeline:

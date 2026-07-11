@@ -92,7 +92,8 @@ colors `lx.visualize()` assigns). Play/pause, previous/next, and a progress
 slider step through the extractions. The viewer pages to whichever page the
 current extraction lives on (one page at a time, so multi-page documents stay
 focused), spotlights its box while dimming the rest, and shows its class,
-text, and attributes. Click any box to jump straight to that extraction:
+text, and attributes. Click any box to jump straight to that extraction, and
+zoom the canvas with the toolbar (or Ctrl/⌘ + scroll) to inspect fine detail:
 
 ```python
 import langextract_docling as lx
