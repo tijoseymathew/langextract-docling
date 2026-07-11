@@ -20,6 +20,7 @@ from docling_core.types.doc.document import ProvenanceItem
 _MODULES = [
     "offsets",
     "escaping",
+    "repetition",
 ]
 
 _REGISTRY: dict[str, typing.Callable[[], "BuiltCase"]] = {}
@@ -98,6 +99,20 @@ def span_probe(marker: str, item: DocItem) -> dict:
   return {
       "kind": "span",
       "marker": marker,
+      "expect": {
+          "doc_item_ref": item.self_ref,
+          "label": str(item.label),
+          "locations": expected_locations(item),
+      },
+  }
+
+
+def occurrence_probe(text: str, occurrence: int, item: DocItem) -> dict:
+  """A span probe for the Nth occurrence of a deliberately repeated text."""
+  return {
+      "kind": "span",
+      "text": text,
+      "occurrence": occurrence,
       "expect": {
           "doc_item_ref": item.self_ref,
           "label": str(item.label),

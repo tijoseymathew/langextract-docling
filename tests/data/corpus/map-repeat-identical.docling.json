@@ -1,0 +1,90 @@
+{
+  "body": {
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      },
+      {
+        "$ref": "#/texts/2"
+      },
+      {
+        "$ref": "#/texts/3"
+      }
+    ],
+    "content_layer": "body",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/body"
+  },
+  "form_items": [],
+  "furniture": {
+    "children": [],
+    "content_layer": "furniture",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/furniture"
+  },
+  "groups": [],
+  "key_value_items": [],
+  "name": "map-repeat-identical",
+  "pages": {},
+  "pictures": [],
+  "schema_name": "DoclingDocument",
+  "tables": [],
+  "texts": [
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "level": 1,
+      "orig": "First home LXM001 of the sentence",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/0",
+      "text": "First home LXM001 of the sentence"
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "orig": "This sentence appears twice, verbatim, in the document.",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/1",
+      "text": "This sentence appears twice, verbatim, in the document."
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "level": 1,
+      "orig": "Second home LXM002 of the sentence",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/2",
+      "text": "Second home LXM002 of the sentence"
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "orig": "This sentence appears twice, verbatim, in the document.",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/3",
+      "text": "This sentence appears twice, verbatim, in the document."
+    }
+  ],
+  "version": "1.10.0"
+}
