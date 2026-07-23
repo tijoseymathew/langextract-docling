@@ -61,7 +61,7 @@ for e in result.extractions:
 
 Notes:
 
-- Provenance granularity is the docling document item (paragraph, heading,
+- `provenance` granularity is the docling document item (paragraph, heading,
   table, list group). `span.doc_item_ref` (e.g. `#/texts/12`) points back
   into the docling document; `span.locations` holds page number, bounding
   box, and coordinate origin (empty for non-paginated sources).
@@ -82,6 +82,36 @@ from langextract_docling.provenance import provenance_to_dict
 with open("results.provenance.json", "w") as f:
     json.dump(provenance_to_dict(result), f)
 ```
+
+### Sub-item provenance
+
+An item-level box is the whole paragraph. `sub_provenance` narrows it to the
+words the extraction actually names, one box per line they occupy:
+
+```python
+for e in result.extractions:
+    for sub in (e.sub_provenance or []):
+        for loc in sub.locations:
+            print(f"{sub.text!r}: page {loc.page_no}, bbox {loc.bbox}")
+```
+
+Each `SubItemProvenance` carries the source item it belongs to
+(`doc_item_ref`, `doc_item_label`), the `charspan` of that item's own text
+the extraction covers, that `text` verbatim (unescaped, as the document has
+it), and the `locations` covering it.
+
+It is computed for PDF inputs whenever `include_provenance` is on, by
+reading the character geometry back out of the source PDF with pypdfium2.
+Two things follow:
+
+- Narrowing is what separates items that share a serialized range. An
+  extraction inside one bullet reports every item of the list in
+  `provenance`, but only that bullet in `sub_provenance`.
+- `sub.exact` says whether the boxes were narrowed. It is `False` when the
+  page had no readable text layer (a scan), when the PDF is no longer
+  available, or for items docling gives no text of their own — tables and
+  pictures, which report their whole box. The charspan and text still narrow
+  in every case where the item has text; only the geometry falls back.
 
 ## PDF highlight visualization
 
@@ -115,10 +145,10 @@ The HTML is fully self-contained (pages are embedded as base64 PNGs); only
 pages with at least one highlight are included. The source PDF path is taken
 from the provenance map; pass `pdf_path=...` when the document came from a
 URL. Optional keywords: `animation_speed` (seconds between extractions),
-`show_legend`, and `scale` (rasterization scale, 1.0 = 72 dpi). Because
-provenance granularity is the document item, a highlight covers the whole
-item the extraction came from, and every item of a list group is boxed when
-an extraction lands in one of them.
+`show_legend`, and `scale` (rasterization scale, 1.0 = 72 dpi). Highlights
+come from `sub_provenance` when it is available, so they outline the
+extracted words themselves; they fall back to the whole document item when
+the source PDF has no readable text layer.
 
 ## Breaking changes in 1.1.0
 
@@ -144,11 +174,13 @@ Test PDFs are generated on demand with reportlab and are not committed:
 session fixture when missing.
 
 The provenance mapping (markdown offsets → `SpanProvenance` →
-`extraction.provenance`) is verified by a deterministic synthetic corpus
-under `tests/corpus/` — constructed `DoclingDocument`s with marker-based
-ground truth, regenerated via `python -m tests.corpus.generate`. See
-`tests/corpus/README.md` for the probe schema and the docling-upgrade
-regeneration flow.
+`extraction.provenance`, and its narrowing to `extraction.sub_provenance`)
+is verified by a deterministic synthetic corpus under `tests/corpus/` —
+constructed `DoclingDocument`s with marker-based ground truth, regenerated
+via `python -m tests.corpus.generate`. See `tests/corpus/README.md` for the
+probe schema and the docling-upgrade regeneration flow. Page geometry, which
+the corpus synthesizes rather than measures, is tested separately in
+`tests/test_word_layout.py` against the generated PDF.
 
 `tests/langextract/` is a byte-for-byte copy of upstream langextract's
 test suite at the pinned version, run against this wrapper (conftest

@@ -168,7 +168,9 @@ def visualize_pdf(
 
   Args:
       annotated_doc: An AnnotatedDocument enriched by extract() with
-        per-extraction `provenance` and a document `provenance_map`.
+        per-extraction provenance and a document `provenance_map`. Boxes
+        come from `sub_provenance` when present, so they outline the
+        extracted words rather than their whole paragraph.
       pdf_path: Path to the source PDF. Defaults to the provenance map's
         recorded source; required explicitly when the document came from a
         URL or the recorded path no longer exists.
@@ -230,12 +232,27 @@ def _maybe_ipython_html(full_html: str) -> "HTML | str":
   return full_html
 
 
+def _provenance_spans(extraction: typing.Any) -> list:
+  """Returns the narrowest provenance an extraction carries.
+
+  Sub-item provenance boxes just the extracted words, one box per line
+  they occupy; item-level provenance boxes the whole paragraph or list.
+  Extractions from documents with no readable page layout, and any saved
+  before sub-item narrowing existed, only carry the latter.
+  """
+  return (
+      getattr(extraction, "sub_provenance", None)
+      or getattr(extraction, "provenance", None)
+      or []
+  )
+
+
 def _filter_locatable_extractions(annotated_doc: typing.Any) -> list:
   """Returns extractions with at least one provenance location, in text order."""
   locatable = [
       e
       for e in annotated_doc.extractions or []
-      if any(span.locations for span in getattr(e, "provenance", None) or [])
+      if any(span.locations for span in _provenance_spans(e))
   ]
 
   def sort_key(extraction):
@@ -255,7 +272,7 @@ def _boxes_of(extraction: typing.Any) -> list[dict]:
   (list items share their group's range), so duplicates collapse.
   """
   boxes: dict[tuple, dict] = {}
-  for span in extraction.provenance or []:
+  for span in _provenance_spans(extraction):
     for loc in span.locations:
       key = (loc.page_no, tuple(loc.bbox), loc.coord_origin)
       boxes.setdefault(

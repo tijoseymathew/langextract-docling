@@ -285,6 +285,64 @@ class TestZoom:
     assert "event.ctrlKey" in html and "event.metaKey" in html
 
 
+class TestSubItemBoxesArePreferred:
+  """Boxes outline the extracted words when sub-item provenance exists."""
+
+  # A tight box inside BBOX, as narrowing to a few words would produce.
+  NARROW_BBOX = (100.0, 770.0, 160.0, 755.0)
+
+  def _with_sub_provenance(self):
+    extraction = _extraction_with_provenance()
+    extraction.sub_provenance = [
+        provenance.SubItemProvenance(
+            doc_item_ref="#/texts/0",
+            doc_item_label="text",
+            charspan=(0, 17),
+            text="Bernoulli numbers",
+            locations=(
+                provenance.SourceLocation(
+                    page_no=1,
+                    bbox=self.NARROW_BBOX,
+                    coord_origin="BOTTOMLEFT",
+                    charspan=(0, 17),
+                ),
+            ),
+        )
+    ]
+    return _highlighted_doc(extractions=[extraction])
+
+  def _box_geometry(self, html):
+    match = re.search(
+        r'class="lx-pdf-box[^"]*" data-idx="0"[^>]*style="'
+        r"left:([\d.]+)%;top:([\d.]+)%;width:([\d.]+)%;height:([\d.]+)%",
+        html,
+    )
+    assert match, "expected a positioned highlight box"
+    return tuple(float(group) for group in match.groups())
+
+  def test_narrow_box_is_drawn_instead_of_the_item_box(self):
+    html = pdf_visualization.visualize_pdf(self._with_sub_provenance())
+    left, _, width, _ = self._box_geometry(html)
+    assert left == pytest.approx(100 * 100 / 595.28, abs=0.01)
+    assert width == pytest.approx(100 * 60 / 595.28, abs=0.01)
+
+  def test_only_one_box_is_drawn_per_extraction(self):
+    html = pdf_visualization.visualize_pdf(self._with_sub_provenance())
+    assert html.count('data-idx="0"') == 1
+
+  def test_item_boxes_are_used_when_there_is_no_sub_provenance(self):
+    html = pdf_visualization.visualize_pdf(_highlighted_doc())
+    left, _, width, _ = self._box_geometry(html)
+    assert left == pytest.approx(100 * 72 / 595.28, abs=0.01)
+    assert width == pytest.approx(100 * (300 - 72) / 595.28, abs=0.01)
+
+  def test_extraction_with_empty_sub_provenance_falls_back(self):
+    doc = self._with_sub_provenance()
+    doc.extractions[0].sub_provenance = []
+    left, _, _, _ = self._box_geometry(pdf_visualization.visualize_pdf(doc))
+    assert left == pytest.approx(100 * 72 / 595.28, abs=0.01)
+
+
 class TestEndToEndPipeline:
 
   def test_extract_then_visualize_real_pdf(self):
@@ -316,3 +374,7 @@ class TestEndToEndPipeline:
     assert "data:image/png;base64," in html
     assert 'data-idx="0"' in html
     assert "Entity" in html and "1/1" in html
+    # The three bullets share one serialized range, so item-level
+    # provenance covers all of them; the drawn box is the narrowed one.
+    assert len(result.extractions[0].provenance) == 3
+    assert html.count('data-idx="0"') == 1
