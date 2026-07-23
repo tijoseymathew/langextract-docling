@@ -150,6 +150,16 @@ ground truth, regenerated via `python -m tests.corpus.generate`. See
 `tests/corpus/README.md` for the probe schema and the docling-upgrade
 regeneration flow.
 
+`tests/langextract/` is a byte-for-byte copy of upstream langextract's
+test suite at the pinned version, run against this wrapper (conftest
+redirects `langextract.extract`). It is never edited locally: upgrading
+means deleting the directory and recopying it from the new tag, which is
+also what keeps an upstream behaviour change visible instead of quietly
+absorbed into a local patch. Upstream scenarios worth re-running over a
+real document live in `tests/extract_document_pipeline_test.py`, which
+drives the full pipeline over the generated PDF behind a stubbed model —
+the offline counterpart of the `live_api` end-to-end test.
+
 ## License
 
 MIT License
