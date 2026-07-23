@@ -1,5 +1,6 @@
 """Tests for provenance enrichment in the wrapper extract() pipeline."""
 
+import json
 import pathlib
 from unittest import mock
 
@@ -80,6 +81,7 @@ class TestPdfPathProvenance:
     result, _ = _run_extract([_extraction(char_interval=None)])
     (extraction,) = result.extractions
     assert extraction.provenance is None
+    assert extraction.sub_provenance is None
 
   def test_include_provenance_false_restores_plain_pipeline(self):
     enriched, enriched_call = _run_extract([_extraction()])
@@ -93,10 +95,73 @@ class TestPdfPathProvenance:
     assert not hasattr(plain, "provenance_map")
     (extraction,) = plain.extractions
     assert not hasattr(extraction, "provenance")
+    assert not hasattr(extraction, "sub_provenance")
 
   def test_include_provenance_not_forwarded_to_langextract(self):
     _, fake = _run_extract([], include_provenance=True)
     assert "include_provenance" not in fake.call_args.kwargs
+
+
+class TestPdfPathSubItemProvenance:
+  """The PDF is read back so boxes outline the extracted words."""
+
+  def _extraction_for(self, phrase):
+    """Runs extract() pretending the model returned `phrase`."""
+    probe, _ = _run_extract([])
+    start = probe.text.index(phrase)
+    interval = data.CharInterval(start_pos=start, end_pos=start + len(phrase))
+    extraction = data.Extraction(
+        extraction_class="finding",
+        extraction_text=phrase,
+        char_interval=interval,
+    )
+    result, _ = _run_extract([extraction])
+    (returned,) = result.extractions
+    return returned
+
+  def test_sub_provenance_narrows_to_the_extracted_words(self):
+    extraction = self._extraction_for("Ada Lovelace")
+    (sub,) = extraction.sub_provenance
+    assert sub.text == "Ada Lovelace"
+    assert sub.exact, "the source PDF should have been read back"
+    assert sub.locations
+
+  def test_sub_boxes_are_smaller_than_the_item_boxes(self):
+    extraction = self._extraction_for("Ada Lovelace")
+
+    def area(bbox):
+      left, top, right, bottom = bbox
+      return abs(right - left) * abs(top - bottom)
+
+    narrowed = sum(
+        area(loc.bbox)
+        for sub in extraction.sub_provenance
+        for loc in sub.locations
+    )
+    item_level = sum(
+        area(loc.bbox)
+        for span in extraction.provenance
+        for loc in span.locations
+    )
+    assert 0 < narrowed < item_level
+
+  def test_sub_provenance_drops_untouched_list_items(self):
+    extraction = self._extraction_for("Bernoulli numbers")
+    # The three bullets serialize as one range, so item-level provenance
+    # reports all of them; narrowing keeps only the one extracted from.
+    assert len(extraction.provenance) == 3
+    assert [sub.text for sub in extraction.sub_provenance] == [
+        "Bernoulli numbers"
+    ]
+
+  def test_pages_are_reported_for_the_second_page_too(self):
+    extraction = self._extraction_for("analytical engine")
+    pages = {
+        loc.page_no
+        for sub in extraction.sub_provenance
+        for loc in sub.locations
+    }
+    assert pages == {2}
 
 
 class TestPdfUrlProvenance:
@@ -120,6 +185,38 @@ class TestPdfUrlProvenance:
     assert result.provenance_map.source == PDF_URL
     assert result.provenance_map.spans
 
+  def test_downloaded_bytes_still_narrow_after_the_file_is_gone(self):
+    # The temporary file is deleted before extraction returns, so
+    # narrowing has to work from the bytes that were downloaded.
+    pdf_bytes = PDF_PATH.read_bytes()
+    probe, _ = _run_extract([])
+    start = probe.text.index("Ada Lovelace")
+    extraction = data.Extraction(
+        extraction_class="person",
+        extraction_text="Ada Lovelace",
+        char_interval=data.CharInterval(
+            start_pos=start, end_pos=start + len("Ada Lovelace")
+        ),
+    )
+    fake = _fake_extract_returning([extraction])
+    with (
+        mock.patch("langextract_docling._original_extract", fake),
+        mock.patch(
+            "langextract_docling.requests.get",
+            return_value=mock.MagicMock(content=pdf_bytes),
+        ),
+    ):
+      result = lx.extract(
+          text_or_documents=PDF_URL,
+          prompt_description="Test",
+          examples=[],
+          fetch_urls=True,
+      )
+    (returned,) = result.extractions
+    (sub,) = returned.sub_provenance
+    assert sub.exact
+    assert sub.text == "Ada Lovelace"
+
 
 class TestNonPdfInputs:
 
@@ -136,6 +233,7 @@ class TestNonPdfInputs:
     assert not hasattr(result, "provenance_map")
     (returned,) = result.extractions
     assert not hasattr(returned, "provenance")
+    assert not hasattr(returned, "sub_provenance")
 
 
 class TestSidecarRoundTrip:
@@ -153,3 +251,8 @@ class TestSidecarRoundTrip:
     assert sidecar["spans"] == result.provenance_map.to_dicts()
     assert sidecar["extractions"][0]
     assert sidecar["extractions"][1] is None
+    assert sidecar["sub_provenance"][0] == [
+        sub.to_dict() for sub in result.extractions[0].sub_provenance
+    ]
+    assert sidecar["sub_provenance"][1] is None
+    json.dumps(sidecar)  # the sidecar must be persistable as-is

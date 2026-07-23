@@ -77,3 +77,21 @@ def test_pdf_extraction_end_to_end_with_provenance():
     for loc in locations:
       assert 1 <= loc.page_no <= page_count
       assert len(loc.bbox) == 4
+
+    assert extraction.sub_provenance, (
+        f"aligned extraction {extraction.extraction_text!r} has no"
+        " sub-item provenance"
+    )
+    for sub in extraction.sub_provenance:
+      for loc in sub.locations:
+        assert 1 <= loc.page_no <= page_count
+        assert len(loc.bbox) == 4
+      if not sub.exact:
+        continue
+      # A narrowed box must be inside the item's box it came from.
+      item_boxes = [
+          span.locations
+          for span in extraction.provenance
+          if span.doc_item_ref == sub.doc_item_ref
+      ]
+      assert item_boxes, "narrowed item must appear in item-level spans"

@@ -163,12 +163,16 @@ def extract(
         mentioned in the previous chunk). Defaults to None (disabled).
       include_provenance: Whether PDF inputs are enriched with provenance:
         each aligned extraction gains a `provenance` attribute (list of
-        provenance.SpanProvenance with page numbers and bounding boxes) and
-        the returned document gains a `provenance_map`. When False, PDFs are
-        converted to the identical markdown text without enrichment. No-op
-        for non-PDF inputs, whose extractions never get a `provenance`
-        attribute (use getattr(e, "provenance", None)). Keyword-only,
-        specific to langextract_docling.
+        provenance.SpanProvenance locating the source document items it
+        came from, with page numbers and bounding boxes), a
+        `sub_provenance` attribute (list of provenance.SubItemProvenance,
+        the same narrowed to the extracted words and the boxes they
+        occupy on the page), and the returned document gains a
+        `provenance_map`. When False, PDFs are converted to the identical
+        markdown text without enrichment. No-op for non-PDF inputs, whose
+        extractions never get these attributes (use getattr(e,
+        "provenance", None)). Keyword-only, specific to
+        langextract_docling.
       output_schema: Optional JSON schema for LangExtract's raw JSON output
         envelope. It replaces example-derived provider constraints, while
         examples still guide the prompt when supplied. Use `lx.schema` helpers
@@ -202,12 +206,15 @@ def extract(
   """
   # Check if text_or_documents is a path to a PDF file or a URL to a PDF file
   provenance_map = None
+  layout = None
   if isinstance(text_or_documents, str):
     if _is_pdf_path(text_or_documents):
       filepath = Path(text_or_documents).expanduser()
       text_or_documents, provenance_map = _serialize_pdf(
           filepath, source=str(filepath), include_provenance=include_provenance
       )
+      if provenance_map is not None:
+        layout = _char_layout(filepath)
     elif fetch_urls and _is_pdf_url(text_or_documents):
       # Download PDF to a temporary file
       with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
@@ -222,6 +229,10 @@ def extract(
             source=text_or_documents,
             include_provenance=include_provenance,
         )
+        if provenance_map is not None:
+          # From the downloaded bytes, not the file: sub-item narrowing
+          # runs after extraction, by which time the file is gone.
+          layout = _char_layout(response.content)
       finally:
         # Clean up the temporary file
         os.unlink(tmp_file_path)
@@ -257,8 +268,30 @@ def extract(
       tokenizer=tokenizer,
   )
   if provenance_map is not None:
-    result = _attach_provenance(result, provenance_map)
+    try:
+      result = _attach_provenance(result, provenance_map, layout)
+    finally:
+      if layout is not None:
+        layout.close()
   return result
+
+
+def _char_layout(source):
+  """Returns page geometry for narrowing provenance below item level.
+
+  Args:
+      source: Path to the PDF, or its bytes when no file will outlive the
+        extraction.
+
+  Returns:
+      A word_layout.PdfCharLayout. It reads nothing yet: pages are parsed
+      on first use, so PDFs no extraction lands on cost nothing.
+  """
+  from langextract_docling import word_layout
+
+  if isinstance(source, bytes):
+    return word_layout.PdfCharLayout.from_bytes(source)
+  return word_layout.PdfCharLayout.from_path(source)
 
 
 def _serialize_pdf(filepath, source, include_provenance):
@@ -289,30 +322,47 @@ def _serialize_pdf(filepath, source, include_provenance):
   return text, provenance_map
 
 
-def _attach_provenance(annotated_doc, provenance_map):
+def _attach_provenance(annotated_doc, provenance_map, layout=None):
   """Enriches an AnnotatedDocument with provenance from the serializer.
 
-  Each aligned extraction gains a `provenance` attribute holding the
-  SpanProvenance list overlapping its char_interval (None when alignment
-  failed); the document gains `provenance_map`. These are dynamic
-  attributes: langextract's own JSONL serializer ignores them — use
-  provenance.provenance_to_dict() to persist them as a sidecar.
+  Each aligned extraction gains two attributes: `provenance`, the
+  SpanProvenance list overlapping its char_interval, which locates the
+  source document items it came from; and `sub_provenance`, the same
+  narrowed to the characters the extraction actually covers — the
+  paragraph's box shrunk to the extracted words, one box per line they
+  occupy. Both are None when alignment failed. The document gains
+  `provenance_map`. These are dynamic attributes: langextract's own JSONL
+  serializer ignores them — use provenance.provenance_to_dict() to
+  persist them as a sidecar.
 
   Args:
       annotated_doc: The AnnotatedDocument returned by langextract.
       provenance_map: The ProvenanceMap for the text langextract received.
+      layout: Optional page geometry used to narrow bounding boxes to the
+        extracted characters. Without it, sub-item provenance still
+        narrows to the right item and charspan, but keeps item-level
+        boxes and reports exact=False.
 
   Returns:
       The same document, enriched in place.
   """
   for extraction in annotated_doc.extractions or []:
-    if extraction.char_interval is not None:
-      extraction.provenance = provenance_map.lookup(
-          extraction.char_interval.start_pos,
-          extraction.char_interval.end_pos,
-      )
-    else:
-      extraction.provenance = None  # alignment failed; no anchor to map
+    interval = extraction.char_interval
+    if (
+        interval is None
+        or interval.start_pos is None
+        or interval.end_pos is None
+    ):
+      # Alignment failed; no anchor to map.
+      extraction.provenance = None
+      extraction.sub_provenance = None
+      continue
+    extraction.provenance = provenance_map.lookup(
+        interval.start_pos, interval.end_pos
+    )
+    extraction.sub_provenance = provenance_map.narrow(
+        interval.start_pos, interval.end_pos, layout
+    )
   annotated_doc.provenance_map = provenance_map
   return annotated_doc
 
