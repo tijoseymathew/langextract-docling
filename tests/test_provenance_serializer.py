@@ -147,6 +147,63 @@ class TestEmptyProvenanceItems:
       assert span.doc_item_ref
 
 
+class TestTextSegments:
+  """Spans record where each item's own text sits in the markdown."""
+
+  def test_segments_recover_the_item_text(self, fixture_name):
+    text, pmap = _serialize(fixture_name)
+    for span in pmap.spans:
+      for segment in span.text_segments:
+        markdown = text[segment.start : segment.start + segment.length]
+        item = span.item_text[
+            segment.item_start : segment.item_start + segment.length
+        ]
+        assert markdown == item
+
+  def test_segments_stay_inside_their_span(self, fixture_name):
+    _, pmap = _serialize(fixture_name)
+    for span in pmap.spans:
+      for segment in span.text_segments:
+        assert span.start <= segment.start
+        assert segment.start + segment.length <= span.end
+
+  def test_segments_advance_through_both_texts(self, fixture_name):
+    _, pmap = _serialize(fixture_name)
+    for span in pmap.spans:
+      for current, following in zip(span.text_segments, span.text_segments[1:]):
+        assert current.start + current.length <= following.start
+        assert current.item_start + current.length <= following.item_start
+
+  def test_items_with_text_are_all_aligned(self, fixture_name):
+    _, pmap = _serialize(fixture_name)
+    for span in pmap.spans:
+      if span.item_text:
+        assert span.text_segments, f"{span.doc_item_ref} was not aligned"
+
+  def test_heading_prefix_is_excluded_from_the_segments(self):
+    text, pmap = _serialize("report_pdf")
+    start = text.index("## Introduction")
+    (span,) = pmap.lookup(start, start + len("## Introduction"))
+    (segment,) = span.text_segments
+    assert text[segment.start] == "I", "the '## ' prefix is not item text"
+
+  def test_group_members_are_located_separately(self):
+    text, pmap = _serialize("notes_md")
+    pos = text.index("- Write the serializer")
+    group = pmap.lookup(pos, pos + 1)
+    starts = [span.text_segments[0].start for span in group]
+    assert starts == sorted(starts), "items must be found in document order"
+    assert len(set(starts)) == 3, "each item sits at its own offset"
+
+  def test_table_has_no_text_to_align(self):
+    _, pmap = _serialize("report_pdf")
+    tables = [s for s in pmap.spans if s.doc_item_ref.startswith("#/tables/")]
+    assert tables, "the report fixture contains a table"
+    for span in tables:
+      assert span.item_text == ""
+      assert span.text_segments == ()
+
+
 class TestImportLightness:
 
   def test_module_does_not_import_chunker_namespaces(self):
