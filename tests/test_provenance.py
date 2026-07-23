@@ -168,4 +168,9 @@ class TestProvenanceToDict:
   def test_document_without_provenance_map(self):
     doc = data.AnnotatedDocument(text="abc", extractions=[])
     result = provenance.provenance_to_dict(doc)
-    assert result == {"source": None, "spans": [], "extractions": {}}
+    assert result == {
+        "source": None,
+        "spans": [],
+        "extractions": {},
+        "sub_provenance": {},
+    }
