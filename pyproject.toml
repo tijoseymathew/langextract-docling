@@ -4,14 +4,18 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "langextract-docling"
-version = "1.0.9-alpha.1"
+version = "1.1.0"
 description = "Docling based wrapper for LangExtract"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 dependencies = [
-    "docling>=2.53.0",
-    "langextract==1.1.0",
+    "docling>=2.111.0",
+    "docling-core[chunking]>=2.86.0,<3.0.0",
+    "langextract==1.6.0",
+    # Imported directly by pdf_visualization; bounds mirror docling's own.
+    "pillow>=10.0.0,<13.0.0",
+    "pypdfium2>=4.30.0,!=4.30.1,<6.0.0",
 ]
 
 [project.optional-dependencies]
@@ -29,6 +33,9 @@ test = [
     "pytest>=7.4.0",
     "tomli>=2.0.0",
     "openai>=2.7.1",
+    # Builds the gitignored test PDF on demand (tests/conftest.py) and
+    # regenerates fixtures via tests/data/make_fixtures.py.
+    "reportlab>=4.0.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -37,7 +44,7 @@ include = ["langextract_docling*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = "*_test.py"
+python_files = ["test_*.py", "*_test.py"]
 python_classes = "Test*"
 python_functions = "test_*"
 # Show extra test summary info

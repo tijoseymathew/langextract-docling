@@ -1,0 +1,7 @@
+## Level 1 heading LXM001 text
+
+### Level 2 heading LXM002 text
+
+#### Level 3 heading LXM003 text
+
+A plain paragraph with LXM004 after the headings.

@@ -1,0 +1,7 @@
+汉字文本环绕着 LXM001 这个标记继续。
+
+نص عربي يحيط بالعلامة LXM002 قبل النهاية.
+
+Family emoji 👨‍👩‍👧‍👦 and flags 🏳️‍🌈 precede LXM003 here.
+
+Combining diacritics éäô surround LXM004 closely.

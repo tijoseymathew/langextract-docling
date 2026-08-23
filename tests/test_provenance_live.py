@@ -1,0 +1,121 @@
+"""Live end-to-end test: real PDF through docling + an LLM + provenance.
+
+Requires OPENROUTER_API_KEY (and optionally OPENROUTER_MODEL) or
+GEMINI_API_KEY (and optionally GEMINI_MODEL) in the environment.
+Run with: pytest tests/test_provenance_live.py -m live_api
+"""
+
+import os
+import pathlib
+
+import pytest
+
+from langextract_docling import provenance
+import langextract_docling as lx
+
+PDF_PATH = pathlib.Path(__file__).parent / "data" / "report.pdf"
+
+
+@pytest.fixture(autouse=True)
+def _needs_generated_pdf(report_pdf_path):
+  """All tests here read the generated (gitignored) report.pdf."""
+
+
+def _model_kwargs() -> dict | None:
+  """The `lx.extract` model arguments, or None when no key is configured.
+
+  OpenRouter wins when its key is set. Its ids carry a vendor prefix
+  ("deepseek/...") that collides with langextract's Ollama routing
+  patterns, so the provider is named rather than inferred from the id.
+  """
+  if key := os.environ.get("OPENROUTER_API_KEY"):
+    from langextract import factory
+
+    return {
+        "config": factory.ModelConfig(
+            model_id=os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini"),
+            provider="OpenAILanguageModel",
+            provider_kwargs={
+                "api_key": key,
+                "base_url": "https://openrouter.ai/api/v1",
+            },
+        )
+    }
+
+  if key := os.environ.get("GEMINI_API_KEY"):
+    model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
+    # Accept litellm-style ids like "gemini/gemini-3.1-flash-lite"
+    model = model.split("/", 1)[1] if model.startswith("gemini/") else model
+    return {"model_id": model, "api_key": key}
+
+  return None
+
+
+@pytest.mark.live_api
+@pytest.mark.integration
+def test_pdf_extraction_end_to_end_with_provenance():
+  model = _model_kwargs()
+  if model is None:
+    pytest.skip("neither OPENROUTER_API_KEY nor GEMINI_API_KEY is set")
+
+  examples = [
+      lx.data.ExampleData(
+          text=(
+              "The study was carried out by Marie Curie and Pierre Curie"
+              " in Paris."
+          ),
+          extractions=[
+              lx.data.Extraction(
+                  extraction_class="person", extraction_text="Marie Curie"
+              ),
+              lx.data.Extraction(
+                  extraction_class="person", extraction_text="Pierre Curie"
+              ),
+          ],
+      )
+  ]
+
+  result = lx.extract(
+      text_or_documents=str(PDF_PATH),
+      prompt_description="Extract the names of all people mentioned.",
+      examples=examples,
+      show_progress=False,
+      **model,
+  )
+
+  assert isinstance(result.provenance_map, provenance.ProvenanceMap)
+  assert result.extractions, "expected the model to extract someone"
+
+  page_count = 2  # report.pdf is a two-page document
+  aligned = [e for e in result.extractions if e.char_interval is not None]
+  assert aligned, "expected at least one aligned extraction"
+  for extraction in aligned:
+    assert extraction.provenance, (
+        f"aligned extraction {extraction.extraction_text!r} has no"
+        " provenance spans"
+    )
+    locations = [
+        loc for span in extraction.provenance for loc in span.locations
+    ]
+    assert locations, "PDF-derived spans must carry physical locations"
+    for loc in locations:
+      assert 1 <= loc.page_no <= page_count
+      assert len(loc.bbox) == 4
+
+    assert extraction.sub_provenance, (
+        f"aligned extraction {extraction.extraction_text!r} has no"
+        " sub-item provenance"
+    )
+    for sub in extraction.sub_provenance:
+      for loc in sub.locations:
+        assert 1 <= loc.page_no <= page_count
+        assert len(loc.bbox) == 4
+      if not sub.exact:
+        continue
+      # A narrowed box must be inside the item's box it came from.
+      item_boxes = [
+          span.locations
+          for span in extraction.provenance
+          if span.doc_item_ref == sub.doc_item_ref
+      ]
+      assert item_boxes, "narrowed item must appear in item-level spans"

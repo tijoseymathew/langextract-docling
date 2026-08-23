@@ -1,0 +1,88 @@
+{
+  "body": {
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      },
+      {
+        "$ref": "#/texts/2"
+      },
+      {
+        "$ref": "#/texts/3"
+      }
+    ],
+    "content_layer": "body",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/body"
+  },
+  "form_items": [],
+  "furniture": {
+    "children": [],
+    "content_layer": "furniture",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/furniture"
+  },
+  "groups": [],
+  "key_value_items": [],
+  "name": "map-unicode",
+  "pages": {},
+  "pictures": [],
+  "schema_name": "DoclingDocument",
+  "tables": [],
+  "texts": [
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "orig": "汉字文本环绕着 LXM001 这个标记继续。",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/0",
+      "text": "汉字文本环绕着 LXM001 这个标记继续。"
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "orig": "نص عربي يحيط بالعلامة LXM002 قبل النهاية.",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/1",
+      "text": "نص عربي يحيط بالعلامة LXM002 قبل النهاية."
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "orig": "Family emoji 👨‍👩‍👧‍👦 and flags 🏳️‍🌈 precede LXM003 here.",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/2",
+      "text": "Family emoji 👨‍👩‍👧‍👦 and flags 🏳️‍🌈 precede LXM003 here."
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "orig": "Combining diacritics éäô surround LXM004 closely.",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/3",
+      "text": "Combining diacritics éäô surround LXM004 closely."
+    }
+  ],
+  "version": "1.10.0"
+}

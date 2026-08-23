@@ -14,6 +14,7 @@
 
 import textwrap
 from typing import Sequence
+from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -1619,8 +1620,6 @@ class AlignEntitiesTest(parameterized.TestCase):
       ),
       dict(
           testcase_name="fuzzy_alignment_partial_overlap_success",
-          # An extraction where the number of matched tokens divided by total extraction tokens
-          # is >= the threshold (3/4 = 0.75).
           extractions=[[
               data.Extraction(
                   extraction_class="finding",
@@ -1634,11 +1633,10 @@ class AlignEntitiesTest(parameterized.TestCase):
               data.Extraction(
                   extraction_class="finding",
                   extraction_text="mild degenerative disc disease",
-                  # The best window found is "degenerative disc disease"
                   token_interval=tokenizer.TokenInterval(
                       start_index=3, end_index=6
                   ),
-                  char_interval=data.CharInterval(start_pos=20, end_pos=50),
+                  char_interval=data.CharInterval(start_pos=25, end_pos=50),
                   alignment_status=data.AlignmentStatus.MATCH_FUZZY,
               )
           ]],
@@ -1864,6 +1862,46 @@ class ResolverTest(parameterized.TestCase):
 
   def test_resolve_empty_yaml_without_suppress_parse_errors(self):
     test_input = "```json\n```"
+    with self.assertRaises(resolver_lib.ResolverParsingError):
+      self.default_resolver.resolve(test_input, suppress_parse_errors=False)
+
+  @parameterized.named_parameters(
+      dict(
+          testcase_name="non_dict_attributes",
+          test_input=(
+              '```json\n{"extractions":'
+              ' [{"entity": "test", "entity_index": 1,'
+              ' "entity_attributes": "bad"}]}\n```'
+          ),
+      ),
+      dict(
+          testcase_name="malformed_key_trailing_colon",
+          test_input=(
+              '```json\n{"extractions":'
+              ' [{"emotion": "joy", "emotion_index": 1,'
+              ' "emotion_attributes:": {"intensity": "high"}}]}\n```'
+          ),
+      ),
+  )
+  def test_resolve_schema_error_suppressed(self, test_input):
+    """Schema errors are suppressed with warning-only logging."""
+    with mock.patch("langextract.resolver.logging") as mock_log:
+      actual = self.default_resolver.resolve(
+          test_input, suppress_parse_errors=True
+      )
+      self.assertEmpty(actual)
+      mock_log.warning.assert_called()
+      log_msg = mock_log.warning.call_args[0][0]
+      self.assertIn("schema error", log_msg)
+      mock_log.error.assert_not_called()
+
+  def test_resolve_schema_error_raises_without_suppression(self):
+    """Malformed attributes raise ResolverParsingError when not suppressed."""
+    test_input = (
+        '```json\n{"extractions":'
+        ' [{"entity": "test", "entity_index": 1,'
+        ' "entity_attributes": "bad"}]}\n```'
+    )
     with self.assertRaises(resolver_lib.ResolverParsingError):
       self.default_resolver.resolve(test_input, suppress_parse_errors=False)
 
@@ -2367,17 +2405,17 @@ class FlexibleSchemaTest(parameterized.TestCase):
     self.assertLen(result, 1)
     self.assertEqual(result[0]["person"], "Charles Darwin")
 
-  def test_strict_mode_rejects_list(self):
+  def test_lenient_mode_accepts_list(self):
+    # Some models return [...] instead of {"extractions": [...]}
     test_input = '[{"person": "Test"}]'
     resolver = resolver_lib.Resolver(
         fence_output=False,
         format_type=data.FormatType.JSON,
         require_extractions_key=True,
     )
-    with self.assertRaisesRegex(
-        resolver_lib.ResolverParsingError, ".*must be a mapping.*"
-    ):
-      resolver.string_to_extraction_data(test_input)
+    result = resolver.string_to_extraction_data(test_input)
+    self.assertLen(result, 1)
+    self.assertEqual(result[0]["person"], "Test")
 
   def test_flexible_with_attributes(self):
     test_input = textwrap.dedent("""\

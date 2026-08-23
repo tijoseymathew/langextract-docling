@@ -32,21 +32,27 @@ import uuid
 import dotenv
 import google.auth
 import google.auth.exceptions
+import google.genai.errors
 import pytest
 
 from langextract import data
 import langextract as lx
+from langextract.core import tokenizer as tokenizer_lib
 from langextract.providers import gemini_batch as gb
+from langextract.providers import openai_batch
 
-dotenv.load_dotenv()
+dotenv.load_dotenv(override=True)
 
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+DEFAULT_GEMINI_MODEL = "gemini-3.5-flash"
 DEFAULT_OPENAI_MODEL = "gpt-4o"
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get(
     "LANGEXTRACT_API_KEY"
 )
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+RUN_OPENAI_BATCH_LIVE_TESTS = (
+    os.environ.get("LANGEXTRACT_RUN_OPENAI_BATCH_LIVE_TESTS") == "1"
+)
 
 VERTEX_PROJECT = os.environ.get("VERTEX_PROJECT") or os.environ.get(
     "GOOGLE_CLOUD_PROJECT"
@@ -75,6 +81,13 @@ skip_if_no_gemini = pytest.mark.skipif(
 skip_if_no_openai = pytest.mark.skipif(
     not OPENAI_API_KEY,
     reason="OpenAI API key not available (set OPENAI_API_KEY)",
+)
+skip_if_openai_batch_live_disabled = pytest.mark.skipif(
+    not RUN_OPENAI_BATCH_LIVE_TESTS,
+    reason=(
+        "OpenAI Batch API live test not enabled "
+        "(set LANGEXTRACT_RUN_OPENAI_BATCH_LIVE_TESTS=1)"
+    ),
 )
 skip_if_no_vertex = pytest.mark.skipif(
     not has_vertex_ai_credentials(),
@@ -127,6 +140,7 @@ def retry_on_transient_errors(max_retries=3, backoff_factor=2.0):
           return func(*args, **kwargs)
         except (
             lx.exceptions.LangExtractError,
+            google.genai.errors.ClientError,
             ConnectionError,
             TimeoutError,
             OSError,
@@ -430,13 +444,6 @@ class TestLiveAPIGemini(unittest.TestCase):
   @skip_if_no_gemini
   @live_api
   @retry_on_transient_errors(max_retries=2)
-  @pytest.mark.xfail(
-      reason=(
-          "Known tokenizer issue with non-Latin characters - see GitHub"
-          " issue #13"
-      ),
-      strict=True,
-  )
   def test_multilingual_medication_extraction(self):
     """Test medication extraction with Japanese text."""
     text = (  # "The patient takes 10 mg of medication daily."
@@ -461,6 +468,8 @@ class TestLiveAPIGemini(unittest.TestCase):
         )
     ]
 
+    unicode_tokenizer = tokenizer_lib.UnicodeTokenizer()
+
     result = lx.extract(
         text_or_documents=text,
         prompt_description=prompt,
@@ -468,6 +477,7 @@ class TestLiveAPIGemini(unittest.TestCase):
         model_id=DEFAULT_GEMINI_MODEL,
         api_key=GEMINI_API_KEY,
         language_model_params=GEMINI_MODEL_PARAMS,
+        tokenizer=unicode_tokenizer,
     )
 
     assert result is not None
@@ -487,7 +497,6 @@ class TestLiveAPIGemini(unittest.TestCase):
   @retry_on_transient_errors(max_retries=2)
   def test_explicit_provider_gemini(self):
     """Test using explicit provider with Gemini."""
-    # Test using provider class name
     config = lx.factory.ModelConfig(
         model_id=DEFAULT_GEMINI_MODEL,
         provider="GeminiLanguageModel",
@@ -501,10 +510,9 @@ class TestLiveAPIGemini(unittest.TestCase):
     self.assertEqual(model.__class__.__name__, "GeminiLanguageModel")
     self.assertEqual(model.model_id, DEFAULT_GEMINI_MODEL)
 
-    # Test using partial name match
     config2 = lx.factory.ModelConfig(
         model_id=DEFAULT_GEMINI_MODEL,
-        provider="gemini",  # Should match GeminiLanguageModel
+        provider="gemini",
         provider_kwargs={
             "api_key": GEMINI_API_KEY,
         },
@@ -653,7 +661,6 @@ class TestLiveAPIGemini(unittest.TestCase):
         "schema_dict should be passed to batch API (not None)",
     )
 
-    # Verify batch results
     self.assertIsInstance(batch_result, list)
     self.assertEqual(
         len(batch_result),
@@ -731,7 +738,6 @@ class TestLiveAPIGemini(unittest.TestCase):
         "enable_caching": True,
     }
 
-    # First run - should hit API and populate cache
     print("\nStarting first batch run (API)...")
     start_time = time.time()
     results1 = list(
@@ -746,7 +752,6 @@ class TestLiveAPIGemini(unittest.TestCase):
     duration1 = time.time() - start_time
     print(f"First run took {duration1:.2f}s")
 
-    # Second run - should use cache
     print("Starting second batch run (Cache)...")
     start_time = time.time()
     results2 = list(
@@ -768,17 +773,147 @@ class TestLiveAPIGemini(unittest.TestCase):
 
     self.assertLess(duration2, 10.0, "Second run took too long for cache hit")
 
-    self.assertLess(duration2, 10.0, "Second run took too long for cache hit")
-
-    # 3. Verify GCS Cache Content
     print("\nVerifying GCS cache content...")
     bucket_name = gb._get_bucket_name(VERTEX_PROJECT, VERTEX_LOCATION)
     print(f"Checking bucket: {bucket_name}")
     self._verify_gcs_cache_content(bucket_name)
 
 
+class TestCrossChunkContext(unittest.TestCase):
+  """Tests for cross-chunk context feature with real API."""
+
+  @skip_if_no_gemini
+  @live_api
+  @retry_on_transient_errors(max_retries=3)
+  def test_context_window_extracts_from_both_chunks(self):
+    """Verify context_window_chars enables extraction across chunk boundaries."""
+    input_text = (
+        "Dr. Sarah Chen is the lead researcher at the institute. "
+        "She published groundbreaking work on neural networks last year."
+    )
+    prompt = textwrap.dedent(
+        """\
+        Extract all person names, roles, and achievements mentioned in the text.
+        Include both explicit names and information associated with pronouns."""
+    )
+    examples = [
+        lx.data.ExampleData(
+            text=(
+                "Professor James Miller leads the physics department. "
+                "He won the Nobel Prize in 2020."
+            ),
+            extractions=[
+                lx.data.Extraction(
+                    extraction_class="person",
+                    extraction_text="Professor James Miller",
+                    attributes={"role": "leads the physics department"},
+                ),
+                lx.data.Extraction(
+                    extraction_class="achievement",
+                    extraction_text="won the Nobel Prize in 2020",
+                ),
+            ],
+        )
+    ]
+
+    result = lx.extract(
+        text_or_documents=input_text,
+        prompt_description=prompt,
+        examples=examples,
+        model_id=DEFAULT_GEMINI_MODEL,
+        api_key=GEMINI_API_KEY,
+        language_model_params=GEMINI_MODEL_PARAMS,
+        max_char_buffer=60,
+        context_window_chars=50,
+    )
+
+    self.assertIsNotNone(result)
+    self.assertGreater(len(result.extractions), 0)
+
+    all_extraction_text = " ".join(
+        str(e.extraction_text) + " " + str(e.attributes)
+        for e in result.extractions
+    ).lower()
+
+    has_chunk1_content = any(
+        term in all_extraction_text
+        for term in ("sarah", "chen", "researcher", "lead")
+    )
+    has_chunk2_content = any(
+        term in all_extraction_text
+        for term in ("published", "groundbreaking", "neural", "networks")
+    )
+
+    self.assertTrue(
+        has_chunk1_content,
+        f"Expected chunk 1 content (Sarah Chen). Got: {result.extractions}",
+    )
+    self.assertTrue(
+        has_chunk2_content,
+        f"Expected chunk 2 content (publication). Got: {result.extractions}",
+    )
+
+
 class TestLiveAPIOpenAI(unittest.TestCase):
   """Tests using real OpenAI API."""
+
+  @skip_if_no_openai
+  @skip_if_openai_batch_live_disabled
+  @live_api
+  @retry_on_transient_errors(max_retries=1)
+  @mock.patch.object(
+      openai_batch, "infer_batch", wraps=openai_batch.infer_batch, autospec=True
+  )
+  def test_batch_extraction_uses_openai_batch_api(self, mock_infer_batch):
+    """OpenAI batch mode runs a real Batch API extraction."""
+    prompt = textwrap.dedent("""\
+        Extract medication information including medication name, dosage, route,
+        frequency, and duration in the order they appear in the text.""")
+    examples = get_basic_medication_examples()
+    documents = [
+        lx.data.Document(
+            document_id="openai_batch_doc1",
+            text="Patient took 400 mg PO Ibuprofen q4h for two days.",
+        ),
+        lx.data.Document(
+            document_id="openai_batch_doc2",
+            text="Administered 2 mg IV Morphine once for acute pain.",
+        ),
+    ]
+    expected_meds = ["Ibuprofen", "Morphine"]
+    language_model_params = {
+        **OPENAI_MODEL_PARAMS,
+        "max_output_tokens": 512,
+        "batch": {
+            "enabled": True,
+            "threshold": 1,
+            "poll_interval": 5,
+            "timeout": 900,
+        },
+    }
+
+    batch_result = lx.extract(
+        text_or_documents=documents,
+        prompt_description=prompt,
+        examples=examples,
+        model_id="gpt-4o-mini",
+        api_key=OPENAI_API_KEY,
+        use_schema_constraints=False,
+        language_model_params=language_model_params,
+    )
+
+    mock_infer_batch.assert_called()
+    call_args = mock_infer_batch.call_args
+    self.assertTrue(call_args.kwargs["cfg"].enabled)
+    self.assertEqual(call_args.kwargs["cfg"].threshold, 1)
+
+    self.assertIsInstance(batch_result, list)
+    self.assertEqual(len(batch_result), len(documents))
+    for result, expected_med in zip(batch_result, expected_meds):
+      self.assertIsInstance(result, lx.data.AnnotatedDocument)
+      medication_texts = extract_by_class(result, _CLASS_MEDICATION)
+      self.assertIn(expected_med, medication_texts)
+      assert_valid_char_intervals(self, result)
 
   @skip_if_no_openai
   @live_api
@@ -847,6 +982,86 @@ class TestLiveAPIOpenAI(unittest.TestCase):
   @skip_if_no_openai
   @live_api
   @retry_on_transient_errors(max_retries=2)
+  def test_medication_extraction_with_schema_constraints(self):
+    """Strict OpenAI outputs enforce the example-derived extraction shape."""
+    prompt = textwrap.dedent("""\
+        Extract conditions and medications in the order they appear in the text.
+        Use exact text for extractions. For condition attributes, include status
+        and symptoms as a list when symptoms are available.""")
+    examples = [
+        lx.data.ExampleData(
+            text="Patient has diabetes with fatigue and takes Metformin.",
+            extractions=[
+                lx.data.Extraction(
+                    extraction_class=_CLASS_CONDITION,
+                    extraction_text="diabetes",
+                    attributes={
+                        "status": "present",
+                        "symptoms": ["fatigue"],
+                    },
+                ),
+                lx.data.Extraction(
+                    extraction_class=_CLASS_MEDICATION,
+                    extraction_text="Metformin",
+                    attributes={"status": "current"},
+                ),
+            ],
+        )
+    ]
+    input_text = (
+        "Patient has headache with fatigue and chills and took 400 mg PO "
+        "Ibuprofen."
+    )
+
+    result = lx.extract(
+        text_or_documents=input_text,
+        prompt_description=prompt,
+        examples=examples,
+        model_id="gpt-4o-mini",
+        api_key=OPENAI_API_KEY,
+        use_schema_constraints=True,
+        fence_output=False,
+        language_model_params={
+            **OPENAI_MODEL_PARAMS,
+            "max_output_tokens": 512,
+        },
+    )
+
+    self.assertIsInstance(result, lx.data.AnnotatedDocument)
+    self.assertGreater(len(result.extractions), 0)
+    allowed_classes = {_CLASS_CONDITION, _CLASS_MEDICATION}
+    extraction_classes = {
+        extraction.extraction_class for extraction in result.extractions
+    }
+    self.assertSetEqual(extraction_classes, allowed_classes)
+    allowed_attribute_keys = {
+        _CLASS_CONDITION: {"status", "symptoms"},
+        _CLASS_MEDICATION: {"status"},
+    }
+    for extraction in result.extractions:
+      if isinstance(extraction.attributes, dict):
+        self.assertLessEqual(
+            set(extraction.attributes),
+            allowed_attribute_keys[extraction.extraction_class],
+        )
+    condition_extractions = [
+        extraction
+        for extraction in result.extractions
+        if extraction.extraction_class == _CLASS_CONDITION
+    ]
+    self.assertTrue(
+        any(
+            isinstance(extraction.attributes, dict)
+            and isinstance(extraction.attributes.get("symptoms"), list)
+            for extraction in condition_extractions
+        ),
+        f"Expected list-valued symptoms attribute. Got: {result.extractions}",
+    )
+    assert_valid_char_intervals(self, result)
+
+  @skip_if_no_openai
+  @live_api
+  @retry_on_transient_errors(max_retries=2)
   def test_explicit_provider_selection(self):
     """Test using explicit provider parameter for disambiguation."""
     # Test with explicit model_id and provider
@@ -861,8 +1076,7 @@ class TestLiveAPIOpenAI(unittest.TestCase):
 
     model = lx.factory.create_model(config)
 
-    # Verify we got the right provider
-    self.assertEqual(model.__class__.__name__, "OpenAILanguageModel")
+    self.assertIsInstance(model, lx.providers.openai.OpenAILanguageModel)
     self.assertEqual(model.model_id, DEFAULT_OPENAI_MODEL)
 
     # Also test using provider without model_id (uses default)
@@ -940,3 +1154,106 @@ class TestLiveAPIOpenAI(unittest.TestCase):
       assert any(
           c in extraction_classes for c in [_CLASS_DOSAGE, "dose"]
       ), f"{med_name} group missing dosage"
+
+  @skip_if_no_openai
+  @live_api
+  @retry_on_transient_errors(max_retries=2)
+  def test_reasoning_effort_passthrough(self):
+    """reasoning_effort is accepted by reasoning models."""
+    examples = get_basic_medication_examples()
+    input_text = "Patient took 400 mg PO Ibuprofen q4h for two days."
+
+    config = lx.factory.ModelConfig(
+        model_id="o4-mini",
+        provider="OpenAILanguageModel",
+        provider_kwargs={
+            "api_key": OPENAI_API_KEY,
+            "reasoning_effort": "low",
+        },
+    )
+
+    result = lx.extract(
+        text_or_documents=input_text,
+        prompt_description="Extract medications.",
+        examples=examples,
+        config=config,
+        use_schema_constraints=False,
+    )
+
+    assert result is not None
+    self.assertIsInstance(result, lx.data.AnnotatedDocument)
+
+
+class TestLiveAPIOutputSchema(unittest.TestCase):
+  """Live tests for user-provided output_schema support."""
+
+  _OUTPUT_SCHEMA = {
+      "type": "object",
+      "properties": {
+          "extractions": {
+              "type": "array",
+              "items": {
+                  "type": "object",
+                  "properties": {
+                      "condition": {"type": "string"},
+                      "condition_attributes": {
+                          "type": "object",
+                          "properties": {
+                              "status": {
+                                  "type": "string",
+                                  "enum": ["active", "resolved"],
+                              }
+                          },
+                          "required": ["status"],
+                          "additionalProperties": False,
+                      },
+                  },
+                  "required": ["condition", "condition_attributes"],
+                  "additionalProperties": False,
+              },
+          }
+      },
+      "required": ["extractions"],
+      "additionalProperties": False,
+  }
+  _INPUT_TEXT = "Patient has active hypertension and a resolved infection."
+
+  def _assert_schema_constrained_extractions(self, result):
+    self.assertIsInstance(result, lx.data.AnnotatedDocument)
+    self.assertTrue(result.extractions)
+    for extraction in result.extractions:
+      self.assertEqual(extraction.extraction_class, "condition")
+      if extraction.attributes:
+        self.assertIn(
+            extraction.attributes.get("status"), ("active", "resolved")
+        )
+
+  @skip_if_no_gemini
+  @live_api
+  def test_gemini_extract_with_output_schema(self):
+    result = lx.extract(
+        text_or_documents=self._INPUT_TEXT,
+        prompt_description=(
+            "Extract medical conditions with their status attribute."
+        ),
+        model_id=DEFAULT_GEMINI_MODEL,
+        api_key=GEMINI_API_KEY,
+        output_schema=self._OUTPUT_SCHEMA,
+    )
+
+    self._assert_schema_constrained_extractions(result)
+
+  @skip_if_no_openai
+  @live_api
+  def test_openai_extract_with_output_schema(self):
+    result = lx.extract(
+        text_or_documents=self._INPUT_TEXT,
+        prompt_description=(
+            "Extract medical conditions with their status attribute."
+        ),
+        model_id=DEFAULT_OPENAI_MODEL,
+        api_key=OPENAI_API_KEY,
+        output_schema=self._OUTPUT_SCHEMA,
+    )
+
+    self._assert_schema_constrained_extractions(result)

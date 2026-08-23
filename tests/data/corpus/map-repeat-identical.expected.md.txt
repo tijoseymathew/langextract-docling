@@ -1,0 +1,7 @@
+## First home LXM001 of the sentence
+
+This sentence appears twice, verbatim, in the document.
+
+## Second home LXM002 of the sentence
+
+This sentence appears twice, verbatim, in the document.

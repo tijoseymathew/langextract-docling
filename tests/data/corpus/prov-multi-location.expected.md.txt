@@ -1,0 +1,7 @@
+## Opening section LXM001 heading
+
+The first paragraph carries LXM002 within it.
+
+## Closing section LXM003 heading
+
+The final paragraph carries LXM004 within it.

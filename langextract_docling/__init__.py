@@ -13,7 +13,9 @@ from typing import Any, Dict
 
 from langextract import extract as _original_extract
 from langextract import prompt_validation as pv
+from langextract import tokenizer as tokenizer_lib
 from langextract.core import data
+from langextract.core import types as core_types
 import requests
 
 # Cache for lazy-loaded modules
@@ -47,7 +49,7 @@ def extract(
     text_or_documents: typing.Any,
     prompt_description: str | None = None,
     examples: typing.Sequence[typing.Any] | None = None,
-    model_id: str = "gemini-2.5-flash",
+    model_id: str = "gemini-3.5-flash",
     api_key: str | None = None,
     language_model_type: typing.Type[typing.Any] | None = None,
     format_type: typing.Any = None,
@@ -63,13 +65,17 @@ def extract(
     debug: bool = False,
     model_url: str | None = None,
     extraction_passes: int = 1,
+    context_window_chars: int | None = None,
     config: typing.Any = None,
     model: typing.Any = None,
     *,
-    fetch_urls: bool = True,
+    include_provenance: bool = True,
+    output_schema: core_types.JsonSchema | None = None,
+    fetch_urls: bool = False,
     prompt_validation_level: pv.PromptValidationLevel = pv.PromptValidationLevel.WARNING,
     prompt_validation_strict: bool = False,
     show_progress: bool = True,
+    tokenizer: tokenizer_lib.Tokenizer | None = None,
 ) -> typing.Any:
   """Extracts structured information from text.
 
@@ -84,6 +90,9 @@ def extract(
         is True), or an iterable of Document objects.
       prompt_description: Instructions for what to extract from the text.
       examples: List of ExampleData objects to guide the extraction.
+        Required unless `output_schema` is provided.
+      tokenizer: Optional Tokenizer instance to use for chunking and alignment.
+        If None, defaults to RegexTokenizer.
       api_key: API key for Gemini or other LLM services (can also use
         environment variable LANGEXTRACT_API_KEY). Cost considerations: Most
         APIs charge by token volume. Smaller max_char_buffer values increase the
@@ -91,7 +100,7 @@ def extract(
         multiple times. Note that max_workers improves processing speed without
         additional token costs. Refer to your API provider's pricing details and
         monitor usage with small test runs to estimate costs.
-      model_id: The model ID to use for extraction (e.g., 'gemini-2.5-flash').
+      model_id: The model ID to use for extraction (e.g., 'gemini-3.5-flash').
         If your model ID is not recognized or you need to use a custom provider,
         use the 'config' parameter with factory.ModelConfig to specify the
         provider explicitly.
@@ -148,10 +157,33 @@ def extract(
         and config are provided, model takes precedence.
       model: Pre-configured language model to use for extraction. Takes
         precedence over all other parameters including config.
+      context_window_chars: Number of characters from the previous chunk to
+        include as context for the current chunk. This helps with coreference
+        resolution across chunk boundaries (e.g., resolving "She" to a person
+        mentioned in the previous chunk). Defaults to None (disabled).
+      include_provenance: Whether PDF inputs are enriched with provenance:
+        each aligned extraction gains a `provenance` attribute (list of
+        provenance.SpanProvenance locating the source document items it
+        came from, with page numbers and bounding boxes), a
+        `sub_provenance` attribute (list of provenance.SubItemProvenance,
+        the same narrowed to the extracted words and the boxes they
+        occupy on the page), and the returned document gains a
+        `provenance_map`. When False, PDFs are converted to the identical
+        markdown text without enrichment. No-op for non-PDF inputs, whose
+        extractions never get these attributes (use getattr(e,
+        "provenance", None)). Keyword-only, specific to
+        langextract_docling.
+      output_schema: Optional JSON schema for LangExtract's raw JSON output
+        envelope. It replaces example-derived provider constraints, while
+        examples still guide the prompt when supplied. Use `lx.schema` helpers
+        for common schemas. Supported by Gemini and OpenAI; YAML and forced
+        fences are invalid with output_schema.
       fetch_urls: Whether to automatically download content when the input is a
-        URL string. When True (default), strings starting with http:// or
-        https:// are fetched. When False, all strings are treated as literal
-        text to analyze. This is a keyword-only parameter.
+        URL string (including PDF URLs). If True, http(s) strings are fetched
+        via `requests.get` with no sanitization (SSRF risk: internal metadata,
+        loopback, redirects, DNS rebinding, etc.). Default False; all strings
+        except local PDF paths are literal text. Only enable when URLs come
+        from a trusted source AND the process runs in a sandbox. Keyword-only.
       prompt_validation_level: Controls pre-flight alignment checks on few-shot
         examples. OFF skips validation, WARNING logs issues but continues, ERROR
         raises on failures. Defaults to WARNING.
@@ -166,35 +198,24 @@ def extract(
         iterable of Documents.
 
   Raises:
-    ValueError: If examples is None or empty.
+    ValueError: If examples is None or empty and neither output_schema nor a
+      preconfigured output-schema model is provided.
     ValueError: If no API key is provided or found in environment variables.
-    requests.RequestException: If URL download fails.
+    requests.RequestException: If `fetch_urls=True` and the URL download fails.
     pv.PromptAlignmentError: If validation fails in ERROR mode.
   """
   # Check if text_or_documents is a path to a PDF file or a URL to a PDF file
+  provenance_map = None
+  layout = None
   if isinstance(text_or_documents, str):
     if _is_pdf_path(text_or_documents):
-      # Import docling components here to avoid dependency issues
-      # when not processing PDF files
-      from docling.document_converter import DocumentConverter
-
-      from langextract_docling.markdown_chunker import HierarchicalMarkdownChunker
-
       filepath = Path(text_or_documents).expanduser()
-      converter = DocumentConverter()
-      document = converter.convert(filepath)
-      chunks = [
-          x for x in HierarchicalMarkdownChunker().chunk(document.document)
-      ]
-
-      # Concatenate all chunks into a single text
-      text_or_documents = "\n\n".join([chunk.text for chunk in chunks])
+      text_or_documents, provenance_map = _serialize_pdf(
+          filepath, source=str(filepath), include_provenance=include_provenance
+      )
+      if provenance_map is not None:
+        layout = _char_layout(filepath)
     elif fetch_urls and _is_pdf_url(text_or_documents):
-      # Handle PDF URL download
-      from docling.document_converter import DocumentConverter
-
-      from langextract_docling.markdown_chunker import HierarchicalMarkdownChunker
-
       # Download PDF to a temporary file
       with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
         response = requests.get(text_or_documents, timeout=30)
@@ -203,20 +224,20 @@ def extract(
         tmp_file_path = tmp_file.name
 
       try:
-        # Process the downloaded PDF
-        converter = DocumentConverter()
-        document = converter.convert(tmp_file_path)
-        chunks = [
-            x for x in HierarchicalMarkdownChunker().chunk(document.document)
-        ]
-
-        # Concatenate all chunks into a single text
-        text_or_documents = "\n\n".join([chunk.text for chunk in chunks])
+        text_or_documents, provenance_map = _serialize_pdf(
+            tmp_file_path,
+            source=text_or_documents,
+            include_provenance=include_provenance,
+        )
+        if provenance_map is not None:
+          # From the downloaded bytes, not the file: sub-item narrowing
+          # runs after extraction, by which time the file is gone.
+          layout = _char_layout(response.content)
       finally:
         # Clean up the temporary file
         os.unlink(tmp_file_path)
 
-  return _original_extract(
+  result = _original_extract(
       text_or_documents=text_or_documents,
       prompt_description=prompt_description,
       examples=examples,
@@ -236,13 +257,132 @@ def extract(
       debug=debug,
       model_url=model_url,
       extraction_passes=extraction_passes,
+      context_window_chars=context_window_chars,
       config=config,
       model=model,
+      output_schema=output_schema,
       fetch_urls=fetch_urls,
       prompt_validation_level=prompt_validation_level,
       prompt_validation_strict=prompt_validation_strict,
       show_progress=show_progress,
+      tokenizer=tokenizer,
   )
+  if provenance_map is not None:
+    try:
+      result = _attach_provenance(result, provenance_map, layout)
+    finally:
+      if layout is not None:
+        layout.close()
+  return result
+
+
+def _char_layout(source):
+  """Returns page geometry for narrowing provenance below item level.
+
+  Args:
+      source: Path to the PDF, or its bytes when no file will outlive the
+        extraction.
+
+  Returns:
+      A word_layout.PdfCharLayout. It reads nothing yet: pages are parsed
+      on first use, so PDFs no extraction lands on cost nothing.
+  """
+  from langextract_docling import word_layout
+
+  if isinstance(source, bytes):
+    return word_layout.PdfCharLayout.from_bytes(source)
+  return word_layout.PdfCharLayout.from_path(source)
+
+
+def _serialize_pdf(filepath, source, include_provenance):
+  """Converts a PDF with docling and serializes it to markdown.
+
+  Args:
+      filepath: Path to the PDF file to convert.
+      source: Origin recorded on the provenance map (original path or URL).
+      include_provenance: Whether to build a ProvenanceMap alongside the
+        text.
+
+  Returns:
+      A (markdown_text, provenance_map) tuple; provenance_map is None when
+      include_provenance is False. The text is identical either way.
+  """
+  # Import docling components here to avoid dependency issues
+  # when not processing PDF files
+  from docling.document_converter import DocumentConverter
+
+  from langextract_docling.provenance_serializer import ProvenanceMarkdownSerializer
+
+  document = DocumentConverter().convert(filepath).document
+  serializer = ProvenanceMarkdownSerializer(doc=document)
+  text, provenance_map = serializer.serialize_with_provenance()
+  if not include_provenance:
+    return text, None
+  provenance_map.source = source
+  return text, provenance_map
+
+
+def _attach_provenance(annotated_doc, provenance_map, layout=None):
+  """Enriches an AnnotatedDocument with provenance from the serializer.
+
+  Each aligned extraction gains two attributes: `provenance`, the
+  SpanProvenance list overlapping its char_interval, which locates the
+  source document items it came from; and `sub_provenance`, the same
+  narrowed to the characters the extraction actually covers — the
+  paragraph's box shrunk to the extracted words, one box per line they
+  occupy. Both are None when alignment failed. The document gains
+  `provenance_map`. These are dynamic attributes: langextract's own JSONL
+  serializer ignores them — use provenance.provenance_to_dict() to
+  persist them as a sidecar.
+
+  Args:
+      annotated_doc: The AnnotatedDocument returned by langextract.
+      provenance_map: The ProvenanceMap for the text langextract received.
+      layout: Optional page geometry used to narrow bounding boxes to the
+        extracted characters. Without it, sub-item provenance still
+        narrows to the right item and charspan, but keeps item-level
+        boxes and reports exact=False.
+
+  Returns:
+      The same document, enriched in place.
+  """
+  for extraction in annotated_doc.extractions or []:
+    interval = extraction.char_interval
+    if (
+        interval is None
+        or interval.start_pos is None
+        or interval.end_pos is None
+    ):
+      # Alignment failed; no anchor to map.
+      extraction.provenance = None
+      extraction.sub_provenance = None
+      continue
+    extraction.provenance = provenance_map.lookup(
+        interval.start_pos, interval.end_pos
+    )
+    extraction.sub_provenance = provenance_map.narrow(
+        interval.start_pos, interval.end_pos, layout
+    )
+  annotated_doc.provenance_map = provenance_map
+  return annotated_doc
+
+
+def visualize(*args: Any, **kwargs: Any):
+  """Top-level API passthrough: langextract.visualization.visualize."""
+  from langextract import visualization
+
+  return visualization.visualize(*args, **kwargs)
+
+
+def visualize_pdf(*args: Any, **kwargs: Any):
+  """Top-level API: animated HTML of extraction bboxes on PDF pages.
+
+  The PDF counterpart of lx.visualize(). See
+  langextract_docling.pdf_visualization.visualize_pdf.
+  """
+  from langextract_docling import pdf_visualization
+
+  return pdf_visualization.visualize_pdf(*args, **kwargs)
 
 
 # PEP 562 lazy loading - same as original langextract
@@ -261,8 +401,9 @@ def __getattr__(name: str) -> Any:
 
 
 def __dir__():
-  # Return the same attributes as the original langextract, plus our wrapped extract
-  original_attrs = ["extract"]  # Include our wrapped extract function
+  # Return the same attributes as the original langextract, plus our wrapped
+  # extract and the PDF highlight renderer
+  original_attrs = ["extract", "visualize", "visualize_pdf"]
   lazy_attrs = list(_LAZY_MODULES.keys())
   return sorted(original_attrs + lazy_attrs)
 

@@ -1,0 +1,11 @@
+Stars *emphasis* and **strong** precede LXM001 here.
+
+Under\_scores \_wrap\_ this\_\_ text before LXM002 arrives.
+
+Hash # signs and ## double hashes sit before LXM003 now.
+
+Pipes | split | cells | before LXM004 in this line.
+
+Backticks `code` and ``double`` come before LXM005 too.
+
+A link [x](y) and image ![a](b) precede LXM006 finally.

@@ -1,0 +1,7 @@
+- First list entry 1 has LXM001 inside.
+- First list entry 2 has LXM002 inside.
+
+A lone paragraph between the lists carries LXM003.
+
+- Second list entry 4 has LXM004 inside.
+- Second list entry 5 has LXM005 inside.

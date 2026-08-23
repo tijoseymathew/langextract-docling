@@ -1,0 +1,43 @@
+{
+  "body": {
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      }
+    ],
+    "content_layer": "body",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/body"
+  },
+  "form_items": [],
+  "furniture": {
+    "children": [],
+    "content_layer": "furniture",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/furniture"
+  },
+  "groups": [],
+  "key_value_items": [],
+  "name": "map-single-item",
+  "pages": {},
+  "pictures": [],
+  "schema_name": "DoclingDocument",
+  "tables": [],
+  "texts": [
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "orig": "A single paragraph containing LXM001 and nothing else.",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/0",
+      "text": "A single paragraph containing LXM001 and nothing else."
+    }
+  ],
+  "version": "1.10.0"
+}

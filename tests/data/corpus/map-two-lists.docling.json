@@ -1,0 +1,140 @@
+{
+  "body": {
+    "children": [
+      {
+        "$ref": "#/groups/0"
+      },
+      {
+        "$ref": "#/texts/2"
+      },
+      {
+        "$ref": "#/groups/1"
+      }
+    ],
+    "content_layer": "body",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/body"
+  },
+  "form_items": [],
+  "furniture": {
+    "children": [],
+    "content_layer": "furniture",
+    "label": "unspecified",
+    "name": "_root_",
+    "self_ref": "#/furniture"
+  },
+  "groups": [
+    {
+      "children": [
+        {
+          "$ref": "#/texts/0"
+        },
+        {
+          "$ref": "#/texts/1"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list",
+      "name": "group",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "self_ref": "#/groups/0"
+    },
+    {
+      "children": [
+        {
+          "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list",
+      "name": "group",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "self_ref": "#/groups/1"
+    }
+  ],
+  "key_value_items": [],
+  "name": "map-two-lists",
+  "pages": {},
+  "pictures": [],
+  "schema_name": "DoclingDocument",
+  "tables": [],
+  "texts": [
+    {
+      "children": [],
+      "content_layer": "body",
+      "enumerated": false,
+      "label": "list_item",
+      "marker": "",
+      "orig": "First list entry 1 has LXM001 inside.",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "prov": [],
+      "self_ref": "#/texts/0",
+      "text": "First list entry 1 has LXM001 inside."
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "enumerated": false,
+      "label": "list_item",
+      "marker": "",
+      "orig": "First list entry 2 has LXM002 inside.",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "prov": [],
+      "self_ref": "#/texts/1",
+      "text": "First list entry 2 has LXM002 inside."
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "orig": "A lone paragraph between the lists carries LXM003.",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "prov": [],
+      "self_ref": "#/texts/2",
+      "text": "A lone paragraph between the lists carries LXM003."
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "enumerated": false,
+      "label": "list_item",
+      "marker": "",
+      "orig": "Second list entry 4 has LXM004 inside.",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "prov": [],
+      "self_ref": "#/texts/3",
+      "text": "Second list entry 4 has LXM004 inside."
+    },
+    {
+      "children": [],
+      "content_layer": "body",
+      "enumerated": false,
+      "label": "list_item",
+      "marker": "",
+      "orig": "Second list entry 5 has LXM005 inside.",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "prov": [],
+      "self_ref": "#/texts/4",
+      "text": "Second list entry 5 has LXM005 inside."
+    }
+  ],
+  "version": "1.10.0"
+}

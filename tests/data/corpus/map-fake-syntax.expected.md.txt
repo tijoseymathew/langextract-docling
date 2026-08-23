@@ -1,0 +1,7 @@
+1. Not an ordered list, just prose with LXM001 inside.
+
+- Not a bullet either, only a dash before LXM002 here.
+
+## Not a heading, a paragraph that carries LXM003 along.
+
+&gt; Not a quote, simply an angle bracket before LXM004.
