@@ -74,11 +74,17 @@ class SpanProvenance:
         non-paginated sources.
       item_text: The source item's own text, the coordinate system of both
         text_segments and every locations[i].charspan. Empty for items
-        that carry no text of their own (tables, pictures).
+        whose text could not be reconstructed (pictures, and tables whose
+        cells the markdown does not spell out).
       text_segments: Runs shared by the markdown [start, end) and
         item_text, in order. Empty when the item's text could not be
         located in its serialization, which disables sub-item narrowing
         for this span but leaves item-level provenance intact.
+      sub_locations: Locations of parts of the item, each carrying the
+        charspan of item_text it covers — today, one per table cell.
+        Narrowing prefers these over `locations`, which stays the item's
+        own box so callers can still cite the item as a whole. Empty for
+        items whose geometry is only known item-level.
   """
 
   start: int
@@ -88,6 +94,7 @@ class SpanProvenance:
   locations: tuple[SourceLocation, ...] = ()
   item_text: str = ""
   text_segments: tuple[TextSegment, ...] = ()
+  sub_locations: tuple[SourceLocation, ...] = ()
 
   def item_charspan(self, start: int, end: int) -> tuple[int, int] | None:
     """Narrows a markdown interval to a range of the item's own text.
@@ -110,9 +117,10 @@ class SpanProvenance:
   def to_dict(self) -> dict:
     """Returns a JSON-serializable dict representation.
 
-    item_text and text_segments are omitted: they are the join machinery
-    behind sub-item narrowing, and would duplicate the whole document in
-    the span table. Persist narrowed results (SubItemProvenance) instead.
+    item_text, text_segments and sub_locations are omitted: they are the
+    join machinery behind sub-item narrowing, and would duplicate the
+    whole document in the span table. Persist narrowed results
+    (SubItemProvenance) instead.
     """
     return {
         "start": self.start,
@@ -320,7 +328,9 @@ def _narrow_span(
   lo, hi = charspan
   locations: list[SourceLocation] = []
   exact = True
-  for location in span.locations:
+  # Table cells box a part of the item each; everything else knows only
+  # where the whole item sits.
+  for location in span.sub_locations or span.locations:
     covered_start = max(lo, location.charspan[0])
     covered_end = min(hi, location.charspan[1])
     if covered_start >= covered_end:
@@ -333,8 +343,12 @@ def _narrow_span(
     if narrowed:
       locations.extend(narrowed)
     else:
+      # Falling back to this location's own box is still exact when the
+      # box holds nothing but the characters asked for — a table cell
+      # covered end to end, say.
       locations.append(location)
-      exact = False
+      held_start, held_end = location.charspan
+      exact = exact and lo <= held_start and held_end <= hi
   return SubItemProvenance(
       doc_item_ref=span.doc_item_ref,
       doc_item_label=span.doc_item_label,

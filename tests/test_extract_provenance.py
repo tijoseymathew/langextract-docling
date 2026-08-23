@@ -154,6 +154,29 @@ class TestPdfPathSubItemProvenance:
         "Bernoulli numbers"
     ]
 
+  def test_table_extraction_boxes_the_cell_not_the_table(self):
+    # "Mathematician" is a cell of the table on page 2 and appears nowhere
+    # else in the report.
+    extraction = self._extraction_for("Mathematician")
+    (sub,) = extraction.sub_provenance
+    assert sub.doc_item_label == "table"
+    assert sub.text == "Mathematician"
+    assert sub.exact
+
+    def area(bbox):
+      left, top, right, bottom = bbox
+      return abs(right - left) * abs(top - bottom)
+
+    (cell,) = sub.locations
+    (table,) = [
+        loc
+        for span in extraction.provenance
+        if span.doc_item_label == "table"
+        for loc in span.locations
+    ]
+    assert cell.page_no == table.page_no
+    assert 0 < area(cell.bbox) < area(table.bbox) / 4
+
   def test_pages_are_reported_for_the_second_page_too(self):
     extraction = self._extraction_for("analytical engine")
     pages = {

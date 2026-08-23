@@ -236,9 +236,10 @@ def _provenance_spans(extraction: typing.Any) -> list:
   """Returns the narrowest provenance an extraction carries.
 
   Sub-item provenance boxes just the extracted words, one box per line
-  they occupy; item-level provenance boxes the whole paragraph or list.
-  Extractions from documents with no readable page layout, and any saved
-  before sub-item narrowing existed, only carry the latter.
+  they occupy, or the table cell they came from; item-level provenance
+  boxes the whole paragraph, list or table. Extractions from documents
+  with no readable page layout, and any saved before sub-item narrowing
+  existed, only carry the latter.
   """
   return (
       getattr(extraction, "sub_provenance", None)

@@ -51,3 +51,6 @@ Thumbs.db
 
 # Generated test fixtures (built on demand; see tests/conftest.py)
 tests/data/report.pdf
+examples/hero_report.pdf
+examples/hero_report.md
+examples/hero_report.html

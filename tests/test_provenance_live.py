@@ -1,6 +1,7 @@
-"""Live end-to-end test: real PDF through docling + Gemini + provenance.
+"""Live end-to-end test: real PDF through docling + an LLM + provenance.
 
-Requires GEMINI_API_KEY (and optionally GEMINI_MODEL) in the environment.
+Requires OPENROUTER_API_KEY (and optionally OPENROUTER_MODEL) or
+GEMINI_API_KEY (and optionally GEMINI_MODEL) in the environment.
 Run with: pytest tests/test_provenance_live.py -m live_api
 """
 
@@ -20,18 +21,42 @@ def _needs_generated_pdf(report_pdf_path):
   """All tests here read the generated (gitignored) report.pdf."""
 
 
-def _model_id() -> str:
-  model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
-  # Accept litellm-style ids like "gemini/gemini-3.1-flash-lite"
-  return model.split("/", 1)[1] if model.startswith("gemini/") else model
+def _model_kwargs() -> dict | None:
+  """The `lx.extract` model arguments, or None when no key is configured.
+
+  OpenRouter wins when its key is set. Its ids carry a vendor prefix
+  ("deepseek/...") that collides with langextract's Ollama routing
+  patterns, so the provider is named rather than inferred from the id.
+  """
+  if key := os.environ.get("OPENROUTER_API_KEY"):
+    from langextract import factory
+
+    return {
+        "config": factory.ModelConfig(
+            model_id=os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini"),
+            provider="OpenAILanguageModel",
+            provider_kwargs={
+                "api_key": key,
+                "base_url": "https://openrouter.ai/api/v1",
+            },
+        )
+    }
+
+  if key := os.environ.get("GEMINI_API_KEY"):
+    model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
+    # Accept litellm-style ids like "gemini/gemini-3.1-flash-lite"
+    model = model.split("/", 1)[1] if model.startswith("gemini/") else model
+    return {"model_id": model, "api_key": key}
+
+  return None
 
 
 @pytest.mark.live_api
 @pytest.mark.integration
 def test_pdf_extraction_end_to_end_with_provenance():
-  api_key = os.environ.get("GEMINI_API_KEY")
-  if not api_key:
-    pytest.skip("GEMINI_API_KEY not set")
+  model = _model_kwargs()
+  if model is None:
+    pytest.skip("neither OPENROUTER_API_KEY nor GEMINI_API_KEY is set")
 
   examples = [
       lx.data.ExampleData(
@@ -54,9 +79,8 @@ def test_pdf_extraction_end_to_end_with_provenance():
       text_or_documents=str(PDF_PATH),
       prompt_description="Extract the names of all people mentioned.",
       examples=examples,
-      model_id=_model_id(),
-      api_key=api_key,
       show_progress=False,
+      **model,
   )
 
   assert isinstance(result.provenance_map, provenance.ProvenanceMap)

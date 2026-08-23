@@ -3,7 +3,14 @@
 import ast
 import pathlib
 
+from docling_core.types.doc.base import BoundingBox
+from docling_core.types.doc.base import CoordOrigin
+from docling_core.types.doc.base import Size
 from docling_core.types.doc.document import DoclingDocument
+from docling_core.types.doc.document import ProvenanceItem
+from docling_core.types.doc.document import TableCell
+from docling_core.types.doc.document import TableData
+from docling_core.types.doc.labels import DocItemLabel
 import pytest
 
 from langextract_docling import provenance
@@ -30,6 +37,99 @@ def _serialize(name: str):
 @pytest.fixture(params=FIXTURES)
 def fixture_name(request):
   return request.param
+
+
+_PAGE_WIDTH = 400.0
+_PAGE_HEIGHT = 200.0
+
+
+def _cell_bbox(row: int, col: int) -> BoundingBox:
+  """A cell's box on the page, in the top-left origin docling reports."""
+  left = 10.0 + 100.0 * col
+  top = 10.0 + 20.0 * row
+  return BoundingBox(
+      l=left,
+      t=top,
+      r=left + 80.0,
+      b=top + 12.0,
+      coord_origin=CoordOrigin.TOPLEFT,
+  )
+
+
+def _table_bbox(rows: int, cols: int) -> BoundingBox:
+  """The box enclosing every cell, in the bottom-left origin tables use."""
+  return BoundingBox(
+      l=10.0,
+      t=_PAGE_HEIGHT - 10.0,
+      r=10.0 + 100.0 * (cols - 1) + 80.0,
+      b=_PAGE_HEIGHT - (10.0 + 20.0 * (rows - 1) + 12.0),
+      coord_origin=CoordOrigin.BOTTOMLEFT,
+  )
+
+
+def _table_span(
+    rows: list[list[str]],
+    *,
+    paginated: bool = True,
+    drop_box: tuple[int, int] | None = None,
+    stray_box: tuple[int, int] | None = None,
+    caption: str | None = None,
+):
+  """Serializes a one-table document; returns (markdown, the table's span).
+
+  Args:
+      rows: Cell text, row by row, laid out on a grid of known boxes.
+      paginated: False places the table nowhere, as a markdown source does.
+      drop_box: (row, col) of a cell to leave without a bounding box.
+      stray_box: (row, col) of a cell to place outside the table's box.
+      caption: Caption text, serialized with the table as one result.
+  """
+  doc = DoclingDocument(name="table")
+  cells = []
+  for row_index, row in enumerate(rows):
+    for col_index, text in enumerate(row):
+      position = (row_index, col_index)
+      if position == drop_box:
+        bbox = None
+      elif position == stray_box:
+        bbox = BoundingBox(
+            l=300.0, t=180.0, r=380.0, b=192.0, coord_origin=CoordOrigin.TOPLEFT
+        )
+      else:
+        bbox = _cell_bbox(row_index, col_index)
+      cells.append(
+          TableCell(
+              text=text,
+              bbox=bbox,
+              start_row_offset_idx=row_index,
+              end_row_offset_idx=row_index + 1,
+              start_col_offset_idx=col_index,
+              end_col_offset_idx=col_index + 1,
+          )
+      )
+  prov = None
+  if paginated:
+    doc.add_page(page_no=1, size=Size(width=_PAGE_WIDTH, height=_PAGE_HEIGHT))
+    prov = ProvenanceItem(
+        page_no=1,
+        bbox=_table_bbox(len(rows), len(rows[0])),
+        charspan=(0, 0),
+    )
+  doc.add_table(
+      data=TableData(
+          num_rows=len(rows), num_cols=len(rows[0]), table_cells=cells
+      ),
+      prov=prov,
+      caption=(
+          None
+          if caption is None
+          else doc.add_text(label=DocItemLabel.CAPTION, text=caption)
+      ),
+  )
+  serializer = provenance_serializer.ProvenanceMarkdownSerializer(doc=doc)
+  text, pmap = serializer.serialize_with_provenance()
+  (span,) = [s for s in pmap.spans if s.doc_item_ref.startswith("#/tables/")]
+  return text, span
 
 
 class TestTextInvariant:
@@ -195,13 +295,109 @@ class TestTextSegments:
     assert starts == sorted(starts), "items must be found in document order"
     assert len(set(starts)) == 3, "each item sits at its own offset"
 
-  def test_table_has_no_text_to_align(self):
-    _, pmap = _serialize("report_pdf")
+  def test_table_is_aligned_through_its_cells(self):
+    text, pmap = _serialize("report_pdf")
     tables = [s for s in pmap.spans if s.doc_item_ref.startswith("#/tables/")]
     assert tables, "the report fixture contains a table"
     for span in tables:
-      assert span.item_text == ""
-      assert span.text_segments == ()
+      assert "Mathematician" in span.item_text
+      assert span.text_segments
+      for segment in span.text_segments:
+        markdown = text[segment.start : segment.start + segment.length]
+        assert (
+            markdown
+            == span.item_text[
+                segment.item_start : segment.item_start + segment.length
+            ]
+        )
+
+
+class TestTableCells:
+  """A table is aligned and boxed cell by cell, or not at all."""
+
+  def test_cells_become_the_tables_own_text(self):
+    _, span = _table_span([["Site", "Lead"], ["Reykjavik", "Amara Osei"]])
+    assert span.item_text == "Site\nLead\nReykjavik\nAmara Osei"
+
+  def test_every_cell_carries_its_own_box(self):
+    _, span = _table_span([["Site", "Lead"], ["Reykjavik", "Amara Osei"]])
+    assert len(span.sub_locations) == 4
+    assert len({loc.bbox for loc in span.sub_locations}) == 4
+    for location in span.sub_locations:
+      start, end = location.charspan
+      assert span.item_text[start:end] in (
+          "Site",
+          "Lead",
+          "Reykjavik",
+          "Amara Osei",
+      )
+
+  def test_cell_boxes_use_the_coordinate_system_of_the_table(self):
+    _, span = _table_span([["Site"], ["Reykjavik"]])
+    (table_box,) = span.locations
+    for location in span.sub_locations:
+      assert location.coord_origin == table_box.coord_origin
+      assert location.page_no == table_box.page_no
+
+  def test_segments_place_each_cell_where_the_markdown_writes_it(self):
+    text, span = _table_span([["Site", "Lead"], ["Reykjavik", "Amara Osei"]])
+    for segment in span.text_segments:
+      markdown = text[segment.start : segment.start + segment.length]
+      assert (
+          markdown
+          == span.item_text[
+              segment.item_start : segment.item_start + segment.length
+          ]
+      )
+
+  def test_repeated_cell_text_pins_to_the_cell_that_holds_it(self):
+    rows = [["Site"], ["Reykjavik"], ["Reykjavik"]]
+    text, span = _table_span(rows)
+    second = text.index("Reykjavik", text.index("Reykjavik") + 1)
+    (sub,) = provenance.ProvenanceMap([span]).narrow(
+        second, second + len("Reykjavik")
+    )
+    (location,) = sub.locations
+    assert location.bbox == span.sub_locations[2].bbox
+    assert location.bbox != span.sub_locations[1].bbox
+
+  def test_table_without_a_page_narrows_to_cell_text_without_boxes(self):
+    _, span = _table_span([["Site"], ["Reykjavik"]], paginated=False)
+    assert span.item_text == "Site\nReykjavik"
+    assert span.sub_locations == ()
+
+  def test_cell_without_a_box_leaves_the_whole_table_unaligned(self):
+    _, span = _table_span([["Site"], ["Reykjavik"]], drop_box=(1, 0))
+    assert span.item_text == ""
+    assert span.text_segments == ()
+    assert span.sub_locations == ()
+    assert span.locations, "the table's own box survives"
+
+  def test_cells_outside_the_tables_box_are_not_trusted(self):
+    _, span = _table_span([["Site"], ["Reykjavik"]], stray_box=(1, 0))
+    assert span.item_text == ""
+    assert span.sub_locations == ()
+
+  def test_cell_the_markdown_rewrites_costs_only_itself(self):
+    # docling writes a pipe inside a cell as "&#124;", so that cell has no
+    # verbatim counterpart to align against; its neighbours still do.
+    text, span = _table_span([["Site", "A|B"], ["Reykjavik", "x"]])
+    assert "A&#124;B" in text
+    assert span.item_text == "Site\nReykjavik\nx"
+    assert len(span.sub_locations) == 3
+
+  def test_cells_are_not_matched_against_the_caption(self):
+    text, span = _table_span(
+        [["Yield"], ["94%"]], caption="Yield by site, quarter three."
+    )
+    first = span.text_segments[0]
+    assert text[first.start : first.start + first.length] == "Yield"
+    assert first.start > text.index("|"), "the cell, not the caption"
+
+  def test_dashes_are_not_matched_against_the_separator_row(self):
+    _, span = _table_span([["Site", "Drift"], ["Reykjavik", "-"]])
+    assert span.item_text == "Site\nDrift\nReykjavik"
+    assert len(span.sub_locations) == 3
 
 
 class TestImportLightness:

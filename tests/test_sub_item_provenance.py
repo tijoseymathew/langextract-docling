@@ -31,6 +31,12 @@ def _location(
   )
 
 
+def _area(bbox):
+  """The area of a (left, top, right, bottom) box, whatever its origin."""
+  left, top, right, bottom = bbox
+  return abs(right - left) * abs(top - bottom)
+
+
 def _verbatim_span(start=0, locations=(_location(),), item_text=ITEM_TEXT):
   """A span whose markdown is the item's text, unescaped and unprefixed."""
   return provenance.SpanProvenance(
@@ -213,8 +219,70 @@ class TestNarrowWithLayout:
     assert sub.locations == span.locations
 
 
+class TestNarrowWithCellLocations:
+  """Tables know where each cell sits, so narrowing stops at the cell."""
+
+  def _cell_span(self):
+    """A table serialized as "| alpha | beta |", boxed cell by cell."""
+    markdown = "| alpha | beta |"
+    return provenance.SpanProvenance(
+        start=0,
+        end=len(markdown),
+        doc_item_ref="#/tables/0",
+        doc_item_label="table",
+        locations=(_location(charspan=(0, 0), bbox=(0.0, 99.0, 300.0, 60.0)),),
+        item_text="alpha\nbeta",
+        text_segments=(
+            provenance.TextSegment(start=2, item_start=0, length=5),
+            provenance.TextSegment(start=10, item_start=6, length=4),
+        ),
+        sub_locations=(
+            _location(charspan=(0, 5), bbox=(10.0, 90.0, 60.0, 80.0)),
+            _location(charspan=(6, 10), bbox=(100.0, 90.0, 140.0, 80.0)),
+        ),
+    )
+
+  def test_cell_narrows_to_its_own_box(self):
+    span = self._cell_span()
+    (sub,) = provenance.ProvenanceMap([span]).narrow(2, 7)
+    assert sub.text == "alpha"
+    assert sub.locations == (span.sub_locations[0],)
+    assert sub.exact, "a box holding just the covered text is exact"
+
+  def test_neighbouring_cell_is_left_out(self):
+    span = self._cell_span()
+    (sub,) = provenance.ProvenanceMap([span]).narrow(10, 14)
+    assert sub.text == "beta"
+    assert sub.locations == (span.sub_locations[1],)
+
+  def test_interval_across_cells_keeps_both_boxes(self):
+    span = self._cell_span()
+    (sub,) = provenance.ProvenanceMap([span]).narrow(2, 14)
+    assert sub.locations == span.sub_locations
+
+  def test_the_tables_own_box_is_not_reported_as_the_cell(self):
+    span = self._cell_span()
+    (sub,) = provenance.ProvenanceMap([span]).narrow(2, 7)
+    assert span.locations[0] not in sub.locations
+
+  def test_layout_narrows_within_the_cell_not_the_table(self):
+    span = self._cell_span()
+    layout = _StubLayout()
+    provenance.ProvenanceMap([span]).narrow(2, 7, layout)
+    (location, item_text, start, end) = layout.calls[0]
+    assert location.charspan == (0, 5), "the cell is what gets narrowed"
+    assert (item_text, start, end) == ("alpha\nbeta", 0, 5)
+
+  def test_part_of_a_cell_is_not_exact_without_a_layout(self):
+    span = self._cell_span()
+    (sub,) = provenance.ProvenanceMap([span]).narrow(2, 6)
+    assert sub.text == "alph"
+    assert not sub.exact, "the cell box holds more than the covered text"
+    assert sub.locations == (span.sub_locations[0],)
+
+
 class TestNarrowWithoutAlignment:
-  """Spans carrying no text (tables, pictures) degrade to the whole item."""
+  """Spans with no text to align (pictures, unreadable tables) stay whole."""
 
   def _table_span(self):
     return provenance.SpanProvenance(
@@ -321,8 +389,15 @@ class TestNarrowOverRealDocuments:
     assert sub.text == "Map the offsets"
     assert sub.locations == ()
 
-  def test_table_falls_back_to_the_whole_table(self, report):
+  def test_table_narrows_to_the_cell_holding_the_text(self, report):
     (sub,) = self._narrow(report, "Mathematician")
     assert sub.doc_item_ref.startswith("#/tables/")
-    assert not sub.exact
-    assert sub.locations, "the table's own box is still reported"
+    assert sub.text == "Mathematician"
+    assert sub.exact
+    (cell,) = sub.locations
+    (table,) = [
+        span.locations[0]
+        for span in report[1].spans
+        if span.doc_item_ref == sub.doc_item_ref
+    ]
+    assert _area(cell.bbox) < _area(table.bbox) / 2, "a cell, not the table"

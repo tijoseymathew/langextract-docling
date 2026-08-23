@@ -107,11 +107,19 @@ Two things follow:
 - Narrowing is what separates items that share a serialized range. An
   extraction inside one bullet reports every item of the list in
   `provenance`, but only that bullet in `sub_provenance`.
-- `sub.exact` says whether the boxes were narrowed. It is `False` when the
-  page had no readable text layer (a scan), when the PDF is no longer
-  available, or for items docling gives no text of their own — tables and
-  pictures, which report their whole box. The charspan and text still narrow
-  in every case where the item has text; only the geometry falls back.
+- Tables have no text of their own, so they are narrowed through their
+  cells: an extraction from a table reports the cell it came from, boxed on
+  its own. A table whose cells docling did not place on the page reports its
+  whole box instead, as does a cell the markdown rewrites rather than
+  spelling out (a `|` inside a cell, say) — that cell alone gets no
+  `sub_provenance`, so read it as `sub_provenance or provenance`, which is
+  what `visualize_pdf()` does.
+- `sub.exact` says whether the boxes hold nothing but the extracted text. It
+  is `False` when the page had no readable text layer (a scan), when the PDF
+  is no longer available, or for items with no geometry below the item — a
+  picture, or a table that fell back to its whole box. The charspan and text
+  still narrow in every case where the item has text; only the geometry
+  falls back.
 
 ## PDF highlight visualization
 
