@@ -4,7 +4,7 @@
   "name": "report",
   "origin": {
     "mimetype": "application/pdf",
-    "binary_hash": 16824000292228181661,
+    "binary_hash": 8069859646853782592,
     "filename": "report.pdf"
   },
   "furniture": {
@@ -27,10 +27,10 @@
         "$ref": "#/texts/2"
       },
       {
-        "$ref": "#/texts/3"
+        "$ref": "#/groups/0"
       },
       {
-        "$ref": "#/groups/0"
+        "$ref": "#/texts/6"
       },
       {
         "$ref": "#/texts/7"
@@ -39,13 +39,10 @@
         "$ref": "#/texts/8"
       },
       {
-        "$ref": "#/texts/9"
-      },
-      {
         "$ref": "#/tables/0"
       },
       {
-        "$ref": "#/texts/10"
+        "$ref": "#/texts/9"
       }
     ],
     "content_layer": "body",
@@ -60,13 +57,13 @@
       },
       "children": [
         {
+          "$ref": "#/texts/3"
+        },
+        {
           "$ref": "#/texts/4"
         },
         {
           "$ref": "#/texts/5"
-        },
-        {
-          "$ref": "#/texts/6"
         }
       ],
       "content_layer": "body",
@@ -88,9 +85,9 @@
           "page_no": 1,
           "bbox": {
             "l": 78.0,
-            "t": 730.8137705078125,
+            "t": 730.8138,
             "r": 182.994,
-            "b": 714.1637705078125,
+            "b": 714.1638,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -116,49 +113,22 @@
           "page_no": 1,
           "bbox": {
             "l": 78.0,
-            "t": 705.0697705078124,
+            "t": 705.0698,
             "r": 513.2,
-            "b": 683.8197705078124,
+            "b": 653.8198,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            103
+            235
           ]
         }
       ],
-      "orig": "This report summarizes the research conducted by Ada Lovelace and Charles Babbage during the year 1843.",
-      "text": "This report summarizes the research conducted by Ada Lovelace and Charles Babbage during the year 1843."
+      "orig": "This report summarizes the research conducted by Ada Lovelace and Charles Babbage during the year 1843. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam.",
+      "text": "This report summarizes the research conducted by Ada Lovelace and Charles Babbage during the year 1843. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam."
     },
     {
       "self_ref": "#/texts/2",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 78.0,
-            "t": 675.0697705078124,
-            "r": 508.7099999999999,
-            "b": 653.8197705078124,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            131
-          ]
-        }
-      ],
-      "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam.",
-      "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam."
-    },
-    {
-      "self_ref": "#/texts/3",
       "parent": {
         "$ref": "#/body"
       },
@@ -170,9 +140,9 @@
           "page_no": 1,
           "bbox": {
             "l": 78.0,
-            "t": 648.8137705078125,
+            "t": 648.8138,
             "r": 191.022,
-            "b": 632.1637705078125,
+            "b": 632.1638,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -184,6 +154,35 @@
       "orig": "Key Findings",
       "text": "Key Findings",
       "level": 1
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 78.0,
+            "t": 623.0698,
+            "r": 278.30000000000007,
+            "b": 611.4058,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            40
+          ]
+        }
+      ],
+      "orig": "\u00b7 The engine computes Bernoulli numbers.",
+      "text": "The engine computes Bernoulli numbers.",
+      "enumerated": false,
+      "marker": "\u00b7"
     },
     {
       "self_ref": "#/texts/4",
@@ -198,19 +197,19 @@
           "page_no": 1,
           "bbox": {
             "l": 78.0,
-            "t": 623.0697705078124,
-            "r": 278.30000000000007,
-            "b": 611.4057705078125,
+            "t": 605.0698,
+            "r": 299.44000000000005,
+            "b": 593.4058,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            40
+            45
           ]
         }
       ],
-      "orig": "\u00b7 The engine computes Bernoulli numbers.",
-      "text": "The engine computes Bernoulli numbers.",
+      "orig": "\u00b7 Punched cards store both programs and data.",
+      "text": "Punched cards store both programs and data.",
       "enumerated": false,
       "marker": "\u00b7"
     },
@@ -227,38 +226,9 @@
           "page_no": 1,
           "bbox": {
             "l": 78.0,
-            "t": 605.0697705078124,
-            "r": 299.44000000000005,
-            "b": 593.4057705078125,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            45
-          ]
-        }
-      ],
-      "orig": "\u00b7 Punched cards store both programs and data.",
-      "text": "Punched cards store both programs and data.",
-      "enumerated": false,
-      "marker": "\u00b7"
-    },
-    {
-      "self_ref": "#/texts/6",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 78.0,
-            "t": 587.0697705078124,
+            "t": 587.0698,
             "r": 252.74000000000004,
-            "b": 575.4057705078125,
+            "b": 575.4058,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -273,7 +243,7 @@
       "marker": "\u00b7"
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/body"
       },
@@ -285,9 +255,9 @@
           "page_no": 1,
           "bbox": {
             "l": 192.6168,
-            "t": 758.8137705078125,
+            "t": 758.8138,
             "r": 402.65880000000004,
-            "b": 742.1637705078125,
+            "b": 742.1638,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -301,7 +271,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/body"
       },
@@ -313,9 +283,9 @@
           "page_no": 2,
           "bbox": {
             "l": 78.0,
-            "t": 758.8137705078125,
+            "t": 758.8138,
             "r": 143.016,
-            "b": 742.1637705078125,
+            "b": 742.1638,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -327,6 +297,33 @@
       "orig": "Results",
       "text": "Results",
       "level": 1
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 78.0,
+            "t": 733.0698,
+            "r": 314.2100000000001,
+            "b": 723.8198,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            56
+          ]
+        }
+      ],
+      "orig": "The table below lists the collaborators and their roles.",
+      "text": "The table below lists the collaborators and their roles."
     },
     {
       "self_ref": "#/texts/9",
@@ -341,36 +338,9 @@
           "page_no": 2,
           "bbox": {
             "l": 78.0,
-            "t": 733.0697705078124,
-            "r": 314.2100000000001,
-            "b": 723.8197705078124,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            56
-          ]
-        }
-      ],
-      "orig": "The table below lists the collaborators and their roles.",
-      "text": "The table below lists the collaborators and their roles."
-    },
-    {
-      "self_ref": "#/texts/10",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 2,
-          "bbox": {
-            "l": 78.0,
-            "t": 649.0697705078124,
+            "t": 649.0698,
             "r": 477.6399999999998,
-            "b": 639.8197705078124,
+            "b": 639.8198,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -397,10 +367,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 213.20660400390625,
-            "t": 724.4555816650391,
-            "r": 381.2909240722656,
-            "b": 669.2812957763672,
+            "l": 213.6752627738287,
+            "t": 724.3767396057274,
+            "r": 381.4937622070313,
+            "b": 669.0765593544024,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -449,7 +419,7 @@
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
             "text": "Role",
-            "column_header": false,
+            "column_header": true,
             "row_header": false,
             "row_section": false,
             "fillable": false
@@ -575,7 +545,7 @@
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
               "text": "Role",
-              "column_header": false,
+              "column_header": true,
               "row_header": false,
               "row_section": false,
               "fillable": false
@@ -675,15 +645,15 @@
   "pages": {
     "1": {
       "size": {
-        "width": 595.2755737304688,
-        "height": 841.8897705078125
+        "width": 595.2756,
+        "height": 841.8898
       },
       "page_no": 1
     },
     "2": {
       "size": {
-        "width": 595.2755737304688,
-        "height": 841.8897705078125
+        "width": 595.2756,
+        "height": 841.8898
       },
       "page_no": 2
     }
